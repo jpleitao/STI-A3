@@ -24,7 +24,12 @@ public class ChatServer implements Runnable
         } catch(IOException ioexception) {
             // Error binding to port
             System.out.println("Binding error (port=" + port + "): " + ioexception.getMessage());
+            server_socket = null;
         }
+    }
+
+    public Boolean getStatus() {
+        return server_socket != null;
     }
     
     public void run()
@@ -152,6 +157,7 @@ public class ChatServer implements Runnable
 
         // Calls new server
         server = new ChatServer(portNumber);
-        server.start();
+        if (server.getStatus())
+            server.start();
     }
 }
