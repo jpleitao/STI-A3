@@ -42,7 +42,7 @@ public class Test2 {
             chain[0]=topCertificate;
             chain[1]=rootCertificate;
 
-            if (topCertificate != null)
+            if (topCertificate != null && rootCertificate != null)
             {
                 FileWriter fw = new FileWriter("certificateClient.cer");
                 fw.write(certToString(topCertificate));
@@ -54,7 +54,7 @@ public class Test2 {
                 mylist.add(topCertificate);
                 CertPath cp = cf.generateCertPath(mylist);
 
-                TrustAnchor anchor = new TrustAnchor((X509Certificate)rootCertificate, null);
+                TrustAnchor anchor = new TrustAnchor(rootCertificate, null);
                 PKIXParameters params = new PKIXParameters(Collections.singleton(anchor));
                 params.setRevocationEnabled(false);
 
