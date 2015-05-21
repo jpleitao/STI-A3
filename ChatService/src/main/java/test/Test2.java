@@ -5,8 +5,10 @@ import java.io.StringWriter;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import sun.security.x509.BasicConstraintsExtension;
 import sun.security.tools.keytool.CertAndKeyGen;
@@ -42,12 +44,27 @@ public class Test2 {
 
             if (topCertificate != null)
             {
-                FileWriter fw = new FileWriter("/home/joaquim/Desktop/certificateClient.cer");
+                FileWriter fw = new FileWriter("certificateClient.cer");
                 fw.write(certToString(topCertificate));
                 fw.close();
 
+                //Check the chain
+                CertificateFactory cf = CertificateFactory.getInstance("X.509");
+                List<X509Certificate> mylist = new ArrayList<>();
+                mylist.add(topCertificate);
+                CertPath cp = cf.generateCertPath(mylist);
 
-                //FIXME: Validar aqui o certificado topCertificate
+                TrustAnchor anchor = new TrustAnchor((X509Certificate)rootCertificate, null);
+                PKIXParameters params = new PKIXParameters(Collections.singleton(anchor));
+                params.setRevocationEnabled(false);
+
+                CertPathValidator cpv =
+                        CertPathValidator.getInstance("PKIX");
+                PKIXCertPathValidatorResult pkixCertPathValidatorResult =
+                        (PKIXCertPathValidatorResult) cpv.validate(cp, params);
+
+                System.out.println("\n\n\n\n\n\n\n\n\n\n\n" +pkixCertPathValidatorResult);
+
             }
 
 
