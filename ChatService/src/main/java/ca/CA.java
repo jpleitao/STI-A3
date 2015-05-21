@@ -57,7 +57,7 @@ public class CA {
         }
     }
 
-    private Boolean generateAndSaveKeys() {
+    private boolean generateAndSaveKeys() {
         try {
             keyGen.generate(1024);
             keyPair = new KeyPair(keyGen.getPublicKey(), keyGen.getPrivateKey());
@@ -69,7 +69,7 @@ public class CA {
         }
     }
 
-    private Boolean savePublicKey() {
+    private boolean savePublicKey() {
         try {
             ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(publicKeyLocation));
             oos.writeObject(keyPair.getPublic());
@@ -82,7 +82,7 @@ public class CA {
         }
     }
 
-    private Boolean generateAndSaveRootCertificate() {
+    private boolean generateAndSaveRootCertificate() {
 
         try {
             rootCertificate = keyGen.getSelfCertificate(new X500Name("CN=ROOT"), rootCertificateDuration);
@@ -96,12 +96,12 @@ public class CA {
         }
     }
 
-    public Boolean getStatus() {
+    public boolean getStatus() {
         return server_socket != null;
     }
 
     public static void main(String args[]) {
-        Boolean result;
+        boolean result;
         CA ca = new CA();
 
         //Generate CA public-private Key and store it in a file
