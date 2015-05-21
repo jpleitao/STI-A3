@@ -63,10 +63,8 @@ public class Test2 {
                 PKIXCertPathValidatorResult pkixCertPathValidatorResult =
                         (PKIXCertPathValidatorResult) cpv.validate(cp, params);
 
-                System.out.println("\n\n\n\n\n\n\n\n\n\n\n" +pkixCertPathValidatorResult);
-
+                System.out.println("\n\n\n\n\n\n\n\n\n\n\n" + pkixCertPathValidatorResult);
             }
-
 
             System.out.println(Arrays.toString(chain));
         }catch(Exception ex){
