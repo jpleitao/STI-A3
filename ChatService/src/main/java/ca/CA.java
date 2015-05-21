@@ -18,24 +18,24 @@ public class CA {
     private final String rootCertificateLocation;
     private final String publicKeyLocation;
 
-    private ServerSocket server_socket;
+    private ServerSocket serverSocket;
     private KeyPair keyPair;
     private CertAndKeyGen keyGen;
     private X509Certificate rootCertificate;
 
     public CA(){
-        server_socket = null;
+        serverSocket = null;
         port = 6000;
         rootCertificateDuration = (long) 365 * 24 * 60 * 60;
         publicKeyLocation = "CA-PublicKey.ser";
         rootCertificateLocation = "CA-Certificate.cer";
         rootCertificate = null;
         try {
-            server_socket = new ServerSocket(port);
+            serverSocket = new ServerSocket(port);
             keyGen = new CertAndKeyGen("RSA","SHA1WithRSA", null);
         } catch(IOException ioexception) {
             System.out.println("Binding error (port=" + port + "): " + ioexception.getMessage());
-            server_socket = null;
+            serverSocket = null;
         } catch (NoSuchAlgorithmException | NoSuchProviderException e) {
             e.printStackTrace();
             keyGen = null;
@@ -47,7 +47,7 @@ public class CA {
             System.out.println("Listening on socket on port " + port +  "...");
             try {
                 //Get new connection
-                Socket socket = server_socket.accept();
+                Socket socket = serverSocket.accept();
                 //Create client thread and start it
                 CAThread caThread = new CAThread(socket, rootCertificate, keyPair.getPrivate());
                 caThread.start();
@@ -97,7 +97,7 @@ public class CA {
     }
 
     public boolean getStatus() {
-        return server_socket != null;
+        return serverSocket != null;
     }
 
     public static void main(String args[]) {
