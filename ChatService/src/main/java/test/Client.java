@@ -13,20 +13,18 @@ public class Client {
     private String publicKeyFilePath;
     private String host;
     private Key serverPublicKey;
-    private Key communicationKey;
+    private Key communicationKey; //The session key
     private Socket socket;
     private Cipher cipher;
 
     public Client() {
         portNumber = 9996;
-        String host = "localhost";
+        host = "localhost";
         publicKeyFilePath = "/home/joaquim/Desktop/publickey.ser";
     }
 
     private void connectToServer() throws IOException {
         socket = new Socket(host, portNumber);
-
-        //FIXME: Generate a session key and send it to the server -- Determine a protocol to do this
     }
 
     private void getPublicKeyFromFile() throws IOException, ClassNotFoundException {

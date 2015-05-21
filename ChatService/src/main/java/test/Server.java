@@ -1,10 +1,15 @@
 package test;
 
+import org.bouncycastle.openssl.PEMReader;
+
 import javax.crypto.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 
 public class Server {
 
@@ -13,19 +18,24 @@ public class Server {
     private KeyPair keyPair;
     private ServerSocket serverSocket;
     private Cipher cipher;
+    private CertificateFactory certificateFactory;
 
-    public Server() throws NoSuchAlgorithmException, IOException {
+    private static final int KEYSIZE = 512;
+
+    public Server() throws NoSuchAlgorithmException, IOException, CertificateException {
         portNumber = 9996;
         publicKeyFilePath = "/home/joaquim/Desktop/publickey.ser";
         keyPair = generateKeyPair();
         serverSocket = new ServerSocket(portNumber);
+        certificateFactory = CertificateFactory.getInstance("X.509");
     }
 
-    public Server(int port, String publicKeyFile) throws NoSuchAlgorithmException, IOException {
+    public Server(int port, String publicKeyFile) throws NoSuchAlgorithmException, IOException, CertificateException {
         portNumber = port;
         publicKeyFilePath = publicKeyFile;
         keyPair = generateKeyPair();
         serverSocket = new ServerSocket(portNumber);
+        certificateFactory = CertificateFactory.getInstance("X.509");
     }
 
     private StringBuffer convertKeyToString(Key key) {
@@ -48,7 +58,7 @@ public class Server {
 
     private KeyPair generateKeyPair() throws NoSuchAlgorithmException {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(512); //Could be a random value, right?
+        keyGen.initialize(KEYSIZE);
         return keyGen.genKeyPair();
     }
 
@@ -90,6 +100,7 @@ public class Server {
 
         CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), cipher);
         PrintWriter printWriter = new PrintWriter(new OutputStreamWriter(cipherOutputStream));
+        DataOutputStream dataOutputStream = new DataOutputStream(cipherOutputStream);
 
         System.out.println("Vou enviar " + message);
         printWriter.write(message);
@@ -100,6 +111,7 @@ public class Server {
 
         try{
             Server server = new Server();
+
             //Export PublicKey to File
             server.exportKeyToFile(server.getPublicKey(), server.getPublicKeyFilePath());
 
@@ -119,6 +131,8 @@ public class Server {
         } catch (NoSuchPaddingException e) {
             e.printStackTrace();
         } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (CertificateException e) {
             e.printStackTrace();
         }
     }
