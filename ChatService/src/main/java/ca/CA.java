@@ -57,7 +57,7 @@ public class CA {
         }
     }
 
-    private Boolean generateandsaveKeys() {
+    private Boolean generateAndSaveKeys() {
         try {
             keyGen.generate(1024);
             keyPair = new KeyPair(keyGen.getPublicKey(), keyGen.getPrivateKey());
@@ -105,7 +105,7 @@ public class CA {
         CA ca = new CA();
 
         //Generate CA public-private Key and store it in a file
-        result = ca.generateandsaveKeys();
+        result = ca.generateAndSaveKeys();
         if (result)
         {
             //Generate Root Certificate and store it in a file
