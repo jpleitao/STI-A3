@@ -45,8 +45,12 @@ public class Test2 {
             if (topCertificate != null && rootCertificate != null)
             {
                 FileWriter fw = new FileWriter("certificateClient.cer");
-                fw.write(certToString(topCertificate));
+                fw.write(certToString(rootCertificate));
                 fw.close();
+
+                ////
+                // Validate client certificate
+                ////
 
                 //Check the chain
                 CertificateFactory cf = CertificateFactory.getInstance("X.509");
@@ -58,10 +62,8 @@ public class Test2 {
                 PKIXParameters params = new PKIXParameters(Collections.singleton(anchor));
                 params.setRevocationEnabled(false);
 
-                CertPathValidator cpv =
-                        CertPathValidator.getInstance("PKIX");
-                PKIXCertPathValidatorResult pkixCertPathValidatorResult =
-                        (PKIXCertPathValidatorResult) cpv.validate(cp, params);
+                CertPathValidator cpv = CertPathValidator.getInstance("PKIX");
+                PKIXCertPathValidatorResult pkixCertPathValidatorResult = (PKIXCertPathValidatorResult) cpv.validate(cp, params);
 
                 System.out.println("\n\n\n\n\n\n\n\n\n\n\n" + pkixCertPathValidatorResult);
             }

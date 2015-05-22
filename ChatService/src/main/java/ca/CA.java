@@ -28,7 +28,7 @@ public class CA {
         port = 6000;
         rootCertificateDuration = (long) 365 * 24 * 60 * 60;
         publicKeyLocation = "CA-PublicKey.ser";
-        rootCertificateLocation = "CA-Certificate.cer";
+        rootCertificateLocation = "CA-Certificate.ser";
         rootCertificate = null;
         try {
             serverSocket = new ServerSocket(port);
@@ -83,11 +83,10 @@ public class CA {
     }
 
     private boolean generateAndSaveRootCertificate() {
-
         try {
             rootCertificate = keyGen.getSelfCertificate(new X500Name("CN=ROOT"), rootCertificateDuration);
             ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(rootCertificateLocation));
-            oos.writeObject(keyPair.getPublic());
+            oos.writeObject(rootCertificate);
             oos.close();
             return true;
         } catch (CertificateException | InvalidKeyException | SignatureException | NoSuchAlgorithmException | NoSuchProviderException | IOException e) {
