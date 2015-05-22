@@ -1,4 +1,4 @@
-package client;
+package cypherStreamTest.client;
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
@@ -12,6 +12,7 @@ import java.util.Arrays;
 
 public class Client {
 
+    private final int keySize = 128;
     private final int portNumber;
     private final String serverPublicKeyFilePath;
     private final String serverHost;
@@ -98,8 +99,8 @@ public class Client {
         }
     }
 
-    private void initCipher(int mode, Key key) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
-        cipher = Cipher.getInstance("RSA");
+    private void initCipher(int mode, Key key, String type) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
+        cipher = Cipher.getInstance(type);
         cipher.init(mode, key);
     }
 
@@ -121,7 +122,7 @@ public class Client {
 
     private byte[] decryptMessage(byte[] message) {
         try{
-            initCipher(Cipher.DECRYPT_MODE, getCurrentKeyDecryption());
+            initCipher(Cipher.DECRYPT_MODE, getCurrentKeyDecryption(), "RSA");
 
             byte[] decrypted = new byte[cipher.getOutputSize(message.length)];
             int dec_len = cipher.update(message, 0, message.length, decrypted, 0);
@@ -135,15 +136,45 @@ public class Client {
         }
     }
 
+    private void generateNewSessionKey(){
+        try {
+            KeyGenerator generator = KeyGenerator.getInstance("AES");
+            generator.init(keySize);
+            communicationKey = generator.generateKey();
+        }
+        catch (NoSuchAlgorithmException e){
+            e.getMessage();
+            e.printStackTrace();
+        }
+    }
+
     private byte[] readMessage() {
         try {
+
+            initCipher(Cipher.ENCRYPT_MODE, getCurrentKeyDecryption(), "RSA");
+
+            //Creating and sending the session key
+            generateNewSessionKey();
+            CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), cipher);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(cipherOutputStream);
+            objectOutputStream.writeObject(communicationKey.getEncoded());
+            objectOutputStream.close();
+
+            /*
+            initCipher(Cipher.DECRYPT_MODE, communicationKey, "AES");
+            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), cipher);
+            ObjectInputStream objectInputStream = new ObjectInputStream(cipherInputStream);
+            String message = (String)objectInputStream.readObject();
+            System.out.println(message);*/
+
+            /*
             byte[] data = new byte[socket.getReceiveBufferSize()];
             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
             int received = dataInputStream.read(data);
             byte[] decryptedData = decryptMessage(data);
             System.out.println("Got data " + Arrays.toString(decryptedData));
-            return decryptedData;
-        } catch (IOException e) {
+            return decryptedData;*/ return null;
+        } catch (IOException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
             e.getMessage();
             e.printStackTrace();
             return null;
@@ -152,7 +183,7 @@ public class Client {
 
     private byte[] encryptMessage(byte[] message) {
         try {
-            initCipher(Cipher.ENCRYPT_MODE, getCurrentKeyEncryption());
+            initCipher(Cipher.ENCRYPT_MODE, getCurrentKeyEncryption(), "RSA");
             byte[] encrypted = new byte[cipher.getOutputSize(message.length)];
             int enc_len = cipher.update(message, 0, message.length, encrypted, 0);
             cipher.doFinal(encrypted, enc_len);

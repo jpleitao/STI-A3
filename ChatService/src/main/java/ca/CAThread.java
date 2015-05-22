@@ -17,7 +17,7 @@ public class CAThread extends Thread {
     private Socket clientSocket;
     private DataInputStream dataInputStream;
     private ObjectOutputStream objectOutputStream;
-    private final int certificateKeyLength = 1024;
+    public static final int certificateKeyLength = 2048;
     private X509Certificate caCertificate;
     private PrivateKey caPrivateKey;
 
@@ -41,7 +41,7 @@ public class CAThread extends Thread {
             System.out.println("Generated certificate for Client");
 
             objectOutputStream.writeObject(clientCertificate);
-            System.out.println("Sended Certificate to Client");
+            System.out.println("Sent Certificate to Client"); //That english, Joca! Sended does not exist! xD
         } catch (IOException ioexception) {
             ioexception.printStackTrace();
             this.interrupt();

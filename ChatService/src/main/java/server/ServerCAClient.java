@@ -43,12 +43,11 @@ public class ServerCAClient {
     }
 
     public static void main(String[] args) {
-        if (args.length != 1) {
-            System.out.println("Invalid arguments! Please call: java CAClient <Client-Name>");
-            return;
-        }
-
         ServerCAClient client = new ServerCAClient();
-        client.connectToCA(args[0]);
+
+        if (args.length != 1)
+            client.connectToCA("server");
+        else
+            client.connectToCA(args[0]);
     }
 }

@@ -59,7 +59,7 @@ public class CA {
 
     private boolean generateAndSaveKeys() {
         try {
-            keyGen.generate(1024);
+            keyGen.generate(CAThread.certificateKeyLength);
             keyPair = new KeyPair(keyGen.getPublicKey(), keyGen.getPrivateKey());
             return savePublicKey();
         } catch (InvalidKeyException e) {
