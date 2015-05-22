@@ -2,10 +2,7 @@ package server;
 
 import ca.CAThread;
 
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.NoSuchPaddingException;
+import javax.crypto.*;
 import java.io.*;
 import java.lang.reflect.ParameterizedType;
 import java.net.ServerSocket;
@@ -42,14 +39,6 @@ public class Server {
         caCertificate = null;
     }
 
-    public Server(int port, String publicKeyFilePath, String caCertificateFilePath) {
-        portNumber = port;
-        this. publicKeyFilePath = publicKeyFilePath;
-        this.caCertificateFilePath = caCertificateFilePath;
-        certificateFactory = null;
-        caCertificate = null;
-        privateKeyFilePath = "Server-PrivateKey.ser";
-    }
     private boolean loadCertificateFactory() {
         try {
             certificateFactory = CertificateFactory.getInstance("X.509");
@@ -72,16 +61,8 @@ public class Server {
         }
     }
 
-    private StringBuffer convertKeyToString(Key key) {
-        byte[] keyEncode = key.getEncoded();
-        StringBuffer retString = new StringBuffer();
-        for (byte aKeyEncode : keyEncode) {
-            retString.append(Integer.toHexString(0x0100 + (aKeyEncode & 0x00FF)).substring(1));
-        }
-        return retString;
-    }
-
     private boolean generateServerKeys() {
+        System.out.println("Going to generate new keys");
         KeyPair keyPair = generateKeyPair();
         if (keyPair == null)
             return false;
@@ -174,65 +155,117 @@ public class Server {
         }
     }
 
-    public void initCipher(int mode, Key key) throws InvalidKeyException, NoSuchPaddingException,
-                                                     NoSuchAlgorithmException {
+    public void initCipher(int mode, Key key) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
         cipher = Cipher.getInstance("RSA");
         cipher.init(mode, key);
     }
 
-    private String readMessage(Socket socket) {
-        try {
-            initCipher(Cipher.DECRYPT_MODE, privateKey);
+    private byte[] decryptMessage(byte[] messageEncrypted, Key key) {
+        try{
+            initCipher(Cipher.DECRYPT_MODE, key);
 
-            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), cipher);
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(cipherInputStream));
-
-            return bufferedReader.readLine();
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IOException e) {
+            byte[] decrypted = new byte[cipher.getOutputSize(messageEncrypted.length)];
+            int dec_len = cipher.update(messageEncrypted, 0, messageEncrypted.length, decrypted, 0);
+            cipher.doFinal(decrypted, dec_len);
+            decrypted = filterMessage(decrypted);
+            return decrypted;
+        } catch(BadPaddingException | IllegalBlockSizeException | ShortBufferException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e){
             e.getMessage();
             e.printStackTrace();
             return null;
         }
     }
 
-    private void sendMessage(String message, Socket socket) {
-        try {
-            initCipher(Cipher.ENCRYPT_MODE, publicKey);//FIXME: Replace this key with the session key to the given client!
+    private byte[] encryptMessage(byte[] messageToEncrypt, Key key) {
+        try{
+            initCipher(Cipher.ENCRYPT_MODE, key);
 
-            CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), cipher);
-            DataOutputStream dataOutputStream = new DataOutputStream(cipherOutputStream);
-
-            System.out.println("Vou enviar " + message);
-            dataOutputStream.writeUTF(message);
-            //dataOutputStream.close();
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IOException e) {
+            byte[] encrypted = new byte[cipher.getOutputSize(messageToEncrypt.length)];
+            int enc_len = cipher.update(messageToEncrypt, 0, messageToEncrypt.length, encrypted, 0);
+            cipher.doFinal(encrypted, enc_len);
+            return encrypted;
+        } catch(BadPaddingException | IllegalBlockSizeException | ShortBufferException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e){
             e.getMessage();
             e.printStackTrace();
+            return null;
         }
+    }
+
+    public byte[] readMessage(Socket socket, Key key) {
+        try {
+            byte[] data = new byte[64];
+            DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
+            int received = dataInputStream.read(data);
+            System.out.println("Before Decryption " + Arrays.toString(data));
+            byte[] decryptedData = decryptMessage(data, key);
+            System.out.println("After Decryption " + Arrays.toString(decryptedData));
+
+            System.out.println("STRING: " + new String(decryptedData));
+
+            return data;
+        } catch (IOException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public boolean sendMessage(byte[] message, Socket socket, Key key) {
+        try {
+            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
+            byte[] messageEncrypted = encryptMessage(message, key);
+            if (messageEncrypted == null)
+                return false;
+            System.out.println("Vou enviar " + Arrays.toString(messageEncrypted) + " com len " + messageEncrypted.length);
+            dataOutputStream.write(messageEncrypted, 0, messageEncrypted.length);
+            return true;
+        } catch (IOException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private byte[] filterMessage(byte[] byteArray) {
+        int i;
+
+        for (i=byteArray.length-1; i>= 0; i--) {
+            if (byteArray[i] != (byte)0)
+                break;
+        }
+
+        if (i >= 0){
+            byte[] result = new byte[i+1];
+            System.arraycopy(byteArray, 0, result, 0, i + 1);
+            return result;
+        }
+        return null;
     }
 
     public boolean authenticateClient(Socket clientSocket) {
         //Reads a client's certificate from the socket and validates it!
-        X509Certificate clientCertificate = getClientCertificateFromSocket(clientSocket);
-        if (clientCertificate == null)
-            return false;
-        return validateClientCertificate(clientCertificate);
+        //X509Certificate clientCertificate = getClientCertificateFromSocket(clientSocket);
+        //return clientCertificate != null && validateClientCertificate(clientCertificate);
+
+        //FIXME: CHANGE THIS TO READ THE CERTIFICATE
+        byte[] message = readMessage(clientSocket, privateKey);
+        System.out.println("Read " + message.length + " bytes");
+
+        return false;
     }
 
     private X509Certificate getClientCertificateFromSocket(Socket socket) {
-
+        //Read the client's certificate from the socket and validate it
         try {
-            initCipher(Cipher.DECRYPT_MODE, privateKey);
-            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), cipher);
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(cipherInputStream));
+            //Read certificate from socket
+            System.out.println("Vou ler o certificado");
+            byte[] certificateEncoded = readMessage(socket, privateKey);
 
-            System.out.println(bufferedReader.readLine());
+            System.out.println("GOT " + Arrays.toString(certificateEncoded));
 
-            //FIXME: CANNOT READ THE CERTIFICATE SENT FROM THE CLIENT
-            //O gajo esta a passar-se a ler so garbage
-
-            return null;
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | IOException | InvalidKeyException e) {
+            //Convert it to a X509Certificate certificate
+            return certificateEncoded==null ? null:(X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(certificateEncoded));
+        } catch (CertificateException e) {
             e.getMessage();
             e.printStackTrace();
             return null;
@@ -271,7 +304,6 @@ public class Server {
                 Socket socket = serverSocket.accept();
 
                 //Create thread to deal with the client and start it
-
                 ServerThread clientThread = new ServerThread(this, socket);
                 clientThread.start();
             } catch (IOException e) {

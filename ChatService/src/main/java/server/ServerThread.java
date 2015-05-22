@@ -1,11 +1,13 @@
 package server;
 
 import java.net.Socket;
+import java.security.Key;
 
 public class ServerThread extends Thread{
 
     private Server server;
     private Socket clientSocket;
+    private Key sessionKey;
 
     public ServerThread(Server server, Socket clientSocket) {
         this.server = server;
