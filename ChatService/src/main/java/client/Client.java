@@ -1,15 +1,12 @@
 package client;
 
 import javax.crypto.*;
-import javax.xml.bind.DatatypeConverter;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.Socket;
-import java.nio.charset.Charset;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
@@ -18,9 +15,10 @@ public class Client {
     private final int portNumber;
     private final String serverPublicKeyFilePath;
     private final String serverHost;
+    private final String sessionKeyAlgorithm;
 
     private Key serverPublicKey;
-    private Key communicationKey; //The session key
+    private SecretKey communicationKey; //The session key
     private Socket socket;
     private Cipher cipher;
     private X509Certificate certificate;
@@ -30,6 +28,7 @@ public class Client {
         portNumber = 9996;
         serverPublicKeyFilePath = "Server-PublicKey.ser";
         serverHost = "localhost";
+        sessionKeyAlgorithm = "AES";
         serverPublicKey = null;
         communicationKey = null;
         socket = null;
@@ -41,9 +40,7 @@ public class Client {
     private boolean connectToServer() {
         try {
             socket = new Socket(serverHost, portNumber);
-            boolean result = this.authenticate();
-            System.out.println("O authenticate deu " + result);
-            return result;
+            return receiveSessionKey();
         } catch(IOException ioexception) {
             ioexception.printStackTrace();
             return false;
@@ -64,6 +61,15 @@ public class Client {
     private Key getCurrentKeyDecryption(){
         //FIXME: THIS MAY NEED TO BE CHANGED IF WE ADD A PUBLIC-PRIVATE KEY TO THE CLIENT
         return communicationKey==null?serverPublicKey:communicationKey;
+    }
+
+    private boolean receiveSessionKey() {
+        byte[] encodedKey = readMessage();
+        if (encodedKey == null)
+            return false;
+        communicationKey = new SecretKeySpec(encodedKey, 0, encodedKey.length, sessionKeyAlgorithm);
+        System.out.println(communicationKey);
+        return true;
     }
 
     private boolean loadStuff() {
@@ -134,12 +140,9 @@ public class Client {
             byte[] data = new byte[socket.getReceiveBufferSize()];
             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
             int received = dataInputStream.read(data);
-
             byte[] decryptedData = decryptMessage(data);
-
-            System.out.println("Got data " + data);
-
-            return data;
+            System.out.println("Got data " + Arrays.toString(decryptedData));
+            return decryptedData;
         } catch (IOException e) {
             e.getMessage();
             e.printStackTrace();
@@ -180,25 +183,6 @@ public class Client {
             e.printStackTrace();
             return false;
         }
-    }
-
-    private boolean authenticate() {
-        ////
-        // Connect to the server, sending in the first place the client's certificate encrypted with the server's
-        // public key
-        ////
-
-        //FIXME: This may get changed so that the Server sends its certificate first!!
-        String teste = "OLA";
-        return sendMessage(teste.getBytes());
-
-        /*try {
-            return sendMessage(certificate.getEncoded());
-        } catch (CertificateEncodingException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return false;
-        }*/
     }
 
     public static void main(String[] args) {

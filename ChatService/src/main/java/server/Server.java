@@ -1,10 +1,7 @@
 package server;
 
-import ca.CAThread;
-
 import javax.crypto.*;
 import java.io.*;
-import java.lang.reflect.ParameterizedType;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
@@ -20,6 +17,7 @@ public class Server {
     private final String publicKeyFilePath;
     private final String privateKeyFilePath;
     private final String caCertificateFilePath;
+    private final String sessionKeyAlgorithm;
 
     private PrivateKey privateKey;
     private PublicKey publicKey;
@@ -29,12 +27,14 @@ public class Server {
     private X509Certificate caCertificate;
 
     private static final int KEYSIZE = 512;
+    private static final int SESSIONKEYSIZE = 128;
 
     public Server() {
         portNumber = 9996;
         publicKeyFilePath = "Server-PublicKey.ser";
         privateKeyFilePath = "Server-PrivateKey.ser";
         caCertificateFilePath = "CA-Certificate.ser";
+        sessionKeyAlgorithm = "AES";
         certificateFactory = null;
         caCertificate = null;
     }
@@ -108,6 +108,18 @@ public class Server {
         } catch(NoSuchAlgorithmException nsae) {
             nsae.getMessage();
             nsae.printStackTrace();
+            return null;
+        }
+    }
+
+    public SecretKey generateSessionKey(){
+        try {
+            KeyGenerator keyGen = KeyGenerator.getInstance(sessionKeyAlgorithm);
+            keyGen.init(SESSIONKEYSIZE);
+            return keyGen.generateKey();
+        } catch (NoSuchAlgorithmException e) {
+            e.getMessage();
+            e.printStackTrace();
             return null;
         }
     }
@@ -191,7 +203,7 @@ public class Server {
         }
     }
 
-    public byte[] readMessage(Socket socket, Key key) {
+    private byte[] readMessage(Socket socket, Key key) {
         try {
             byte[] data = new byte[64];
             DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
@@ -210,7 +222,7 @@ public class Server {
         }
     }
 
-    public boolean sendMessage(byte[] message, Socket socket, Key key) {
+    private boolean sendMessage(byte[] message, Socket socket, Key key) {
         try {
             DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
             byte[] messageEncrypted = encryptMessage(message, key);
@@ -240,6 +252,22 @@ public class Server {
             return result;
         }
         return null;
+    }
+
+    public boolean sendKeyToClient(Socket clientSocket, byte[] keyEncoded, Key previousKey) {
+        boolean result;
+        if (previousKey == null) {
+            //First time the client connected, no need to send him the message code to change keys
+            result = sendMessage(keyEncoded, clientSocket, privateKey);
+        }
+        else {
+            String message = "New Session Key";
+            result = sendMessage(message.getBytes(), clientSocket, previousKey);
+            if (!result)
+                return false;
+            result = sendMessage(keyEncoded, clientSocket, previousKey);
+        }
+        return result;
     }
 
     public boolean authenticateClient(Socket clientSocket) {
@@ -294,6 +322,15 @@ public class Server {
             e.printStackTrace();
             return false;
         }
+    }
+
+    private StringBuffer convertKeyToString(Key key) {
+        byte[] keyEncode = key.getEncoded();
+        StringBuffer retString = new StringBuffer();
+        for (byte aKeyEncode : keyEncode) {
+            retString.append(Integer.toHexString(0x0100 + (aKeyEncode & 0x00FF)).substring(1));
+        }
+        return retString;
     }
 
     private void run() {
