@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="4285d466-a304-4568-8a31-169402c73636" name="Default" comment="">
+    <list default="true" id="4285d466-a304-4568-8a31-169402c73636" name="Default" comment="Irrelevant changes">
+      <change type="DELETED" beforePath="$PROJECT_DIR$/../Server-PrivateKey.ser" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/../Server-PublicKey.ser" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Server-PrivateKey.ser" afterPath="$PROJECT_DIR$/Server-PrivateKey.ser" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Server-PublicKey.ser" afterPath="$PROJECT_DIR$/Server-PublicKey.ser" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/client/Client.java" afterPath="$PROJECT_DIR$/src/main/java/client/Client.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/server/Server.java" afterPath="$PROJECT_DIR$/src/main/java/server/Server.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/server/ServerThread.java" afterPath="$PROJECT_DIR$/src/main/java/server/ServerThread.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="ChatService.iws" />
@@ -35,29 +36,31 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="Client.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="Client.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/main/java/client/Client.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="1.5109091">
-              <caret line="63" column="0" selection-start-line="63" selection-start-column="0" selection-end-line="63" selection-end-column="0" />
+            <state vertical-scroll-proportion="0.0">
+              <caret line="22" column="21" selection-start-line="22" selection-start-column="12" selection-end-line="22" selection-end-column="21" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="method#loadServerPublicKey#0;class#Client#0" expanded="false" />
                 <element signature="method#loadClientCertificate#0;class#Client#0" expanded="false" />
-                <element signature="e#4498#4499#0" expanded="true" />
-                <element signature="e#4525#4526#0" expanded="true" />
+                <element signature="e#4484#4485#0" expanded="true" />
+                <element signature="e#4511#4512#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Server.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Server.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/server/Server.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0">
-              <caret line="213" column="82" selection-start-line="213" selection-start-column="63" selection-end-line="213" selection-end-column="82" />
+            <state vertical-scroll-proportion="0.43636364">
+              <caret line="97" column="39" selection-start-line="97" selection-start-column="39" selection-end-line="97" selection-end-column="39" />
               <folding>
                 <element signature="imports" expanded="true" />
+                <element signature="e#5680#5681#0" expanded="true" />
+                <element signature="e#5754#5755#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -67,7 +70,7 @@
         <entry file="file://$PROJECT_DIR$/src/main/java/server/ServerThread.java">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="26" column="70" selection-start-line="26" selection-start-column="70" selection-end-line="26" selection-end-column="70" />
+              <caret line="21" column="23" selection-start-line="21" selection-start-column="23" selection-end-line="21" selection-end-column="23" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -857,7 +860,7 @@
       <workItem from="1432256407662" duration="2938000" />
       <workItem from="1432280226515" duration="10594000" />
       <workItem from="1432325677961" duration="272000" />
-      <workItem from="1432327297527" duration="9706000" />
+      <workItem from="1432327297527" duration="11671000" />
     </task>
     <task id="LOCAL-00001" summary="Added project file">
       <created>1431960277927</created>
@@ -955,11 +958,17 @@
       <option name="project" value="LOCAL" />
       <updated>1432293322292</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="Can generate and send the symmetric key to the Server over sockets with RSA. However we might need to change the generation of the key a little bit">
+      <created>1432341430802</created>
+      <option name="number" value="00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1432341430802</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="71828000" />
+    <option name="totallyTimeSpent" value="73793000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="65" y="24" width="1855" height="1056" extended-state="6" />
@@ -1043,7 +1052,8 @@
     <MESSAGE value="Added more missing files" />
     <MESSAGE value="Can send encrypted strings from the client to the server. However we cannot send encrypted certificates" />
     <MESSAGE value="Generating session keys but failing to send it to the client (In fact any string larger than 64 bytes cannot be sent)" />
-    <option name="LAST_COMMIT_MESSAGE" value="Generating session keys but failing to send it to the client (In fact any string larger than 64 bytes cannot be sent)" />
+    <MESSAGE value="Can generate and send the symmetric key to the Server over sockets with RSA. However we might need to change the generation of the key a little bit" />
+    <option name="LAST_COMMIT_MESSAGE" value="Can generate and send the symmetric key to the Server over sockets with RSA. However we might need to change the generation of the key a little bit" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1088,8 +1098,8 @@
             <element signature="imports" expanded="true" />
             <element signature="method#loadServerPublicKey#0;class#Client#0" expanded="false" />
             <element signature="method#loadClientCertificate#0;class#Client#0" expanded="false" />
-            <element signature="e#4498#4499#0" expanded="true" />
-            <element signature="e#4525#4526#0" expanded="true" />
+            <element signature="e#4484#4485#0" expanded="true" />
+            <element signature="e#4511#4512#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -1100,6 +1110,8 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
+            <element signature="e#5680#5681#0" expanded="true" />
+            <element signature="e#5754#5755#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -1122,8 +1134,8 @@
             <element signature="imports" expanded="true" />
             <element signature="method#loadServerPublicKey#0;class#Client#0" expanded="false" />
             <element signature="method#loadClientCertificate#0;class#Client#0" expanded="false" />
-            <element signature="e#4498#4499#0" expanded="true" />
-            <element signature="e#4525#4526#0" expanded="true" />
+            <element signature="e#4484#4485#0" expanded="true" />
+            <element signature="e#4511#4512#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -1134,6 +1146,8 @@
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="imports" expanded="true" />
+            <element signature="e#5680#5681#0" expanded="true" />
+            <element signature="e#5754#5755#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -1163,8 +1177,8 @@
             <element signature="imports" expanded="true" />
             <element signature="method#loadServerPublicKey#0;class#Client#0" expanded="false" />
             <element signature="method#loadClientCertificate#0;class#Client#0" expanded="false" />
-            <element signature="e#4498#4499#0" expanded="true" />
-            <element signature="e#4525#4526#0" expanded="true" />
+            <element signature="e#4484#4485#0" expanded="true" />
+            <element signature="e#4511#4512#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -1175,6 +1189,8 @@
           <caret line="235" column="64" selection-start-line="235" selection-start-column="64" selection-end-line="235" selection-end-column="64" />
           <folding>
             <element signature="imports" expanded="true" />
+            <element signature="e#5680#5681#0" expanded="true" />
+            <element signature="e#5754#5755#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -1447,17 +1463,7 @@
     <entry file="file://$PROJECT_DIR$/src/main/java/server/ServerThread.java">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
-          <caret line="26" column="70" selection-start-line="26" selection-start-column="70" selection-end-line="26" selection-end-column="70" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/server/Server.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="213" column="82" selection-start-line="213" selection-start-column="63" selection-end-line="213" selection-end-column="82" />
+          <caret line="21" column="23" selection-start-line="21" selection-start-column="23" selection-end-line="21" selection-end-column="23" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
@@ -1466,14 +1472,26 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/client/Client.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="1.5109091">
-          <caret line="63" column="0" selection-start-line="63" selection-start-column="0" selection-end-line="63" selection-end-column="0" />
+        <state vertical-scroll-proportion="0.0">
+          <caret line="22" column="21" selection-start-line="22" selection-start-column="12" selection-end-line="22" selection-end-column="21" />
           <folding>
             <element signature="imports" expanded="true" />
             <element signature="method#loadServerPublicKey#0;class#Client#0" expanded="false" />
             <element signature="method#loadClientCertificate#0;class#Client#0" expanded="false" />
-            <element signature="e#4498#4499#0" expanded="true" />
-            <element signature="e#4525#4526#0" expanded="true" />
+            <element signature="e#4484#4485#0" expanded="true" />
+            <element signature="e#4511#4512#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/server/Server.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.43636364">
+          <caret line="97" column="39" selection-start-line="97" selection-start-column="39" selection-end-line="97" selection-end-column="39" />
+          <folding>
+            <element signature="imports" expanded="true" />
+            <element signature="e#5680#5681#0" expanded="true" />
+            <element signature="e#5754#5755#0" expanded="true" />
           </folding>
         </state>
       </provider>

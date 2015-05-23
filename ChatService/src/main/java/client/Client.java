@@ -31,7 +31,7 @@ public class Client {
         SESSIONKEYSIZE = 128;
         serverPublicKeyFilePath = "Server-PublicKey.ser";
         serverHost = "localhost";
-        sessionKeyAlgorithm = "AES/CBC/PKCS5Padding";
+        sessionKeyAlgorithm = "AES/CTS/PKCS5Padding";
         serverEncryptionAlgorithm = "RSA/None/PKCS1Padding";
         serverPublicKey = null;
         communicationKey = null;
@@ -61,7 +61,7 @@ public class Client {
 
     private SecretKey generateSessionKey(){
         try {
-            KeyGenerator keyGen = KeyGenerator.getInstance(sessionKeyAlgorithm);
+            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
             keyGen.init(SESSIONKEYSIZE);
             return keyGen.generateKey();
         } catch (NoSuchAlgorithmException e) {

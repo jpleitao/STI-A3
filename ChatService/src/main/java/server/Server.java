@@ -38,7 +38,7 @@ public class Server {
         publicKeyFilePath = "Server-PublicKey.ser";
         privateKeyFilePath = "Server-PrivateKey.ser";
         caCertificateFilePath = "CA-Certificate.ser";
-        sessionKeyAlgorithm = "AES/CBC/PKCS5Padding";
+        sessionKeyAlgorithm = "AES/CTS/PKCS5Padding";
         serverKeyAlgorithm = "RSA/None/PKCS1Padding";
         certificateType = "X.509";
         certificateFactory = null;
@@ -95,14 +95,16 @@ public class Server {
 
     private boolean exportPrivateKeyToFile(String filePath) {
         try {
-            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath));
-            //FIXME FIXME: ENCRYPT THIS!!!!
-            oos.writeObject(privateKey);
-            oos.close();
+            //FIXME: See how to encrypt this!!
+            //initCipher(Cipher.ENCRYPT_MODE, publicKey, serverKeyAlgorithm);
+            //CipherOutputStream cipherOutputStream = new CipherOutputStream(new FileOutputStream(filePath), cipher);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(filePath));
+            objectOutputStream.writeObject(privateKey);
+            objectOutputStream.close();
             return true;
-        } catch(IOException ioe) {
-            ioe.getMessage();
-            ioe.printStackTrace();
+        } catch(IOException /*| NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException | InvalidKeyException*/ e) {
+            e.getMessage();
+            e.printStackTrace();
             return false;
         }
     }
@@ -146,12 +148,14 @@ public class Server {
 
     private boolean loadPrivateKeyFromFile() {
         try {
+            //FIXME: See how to decrypt this!!
+            //initCipher(Cipher.DECRYPT_MODE, privateKey, serverKeyAlgorithm);
+            //CipherInputStream cipherInputStream = new CipherInputStream(new FileInputStream(privateKeyFilePath), cipher);
             ObjectInputStream ois = new ObjectInputStream(new FileInputStream(privateKeyFilePath));
-            //FIXME FIXME FIXME: THIS SHOULD BE ENCRYPTED!!
             privateKey = (PrivateKey) ois.readObject();
             ois.close();
             return true;
-        }catch (ClassNotFoundException | IOException e) {
+        }catch (ClassNotFoundException | IOException /*| NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException | InvalidKeyException */ e) {
             e.getMessage();
             e.printStackTrace();
             return false;
@@ -211,7 +215,7 @@ public class Server {
             ObjectInputStream objectOutputStream = new ObjectInputStream(cipherInputStream);
             //Read object and create a new key from the object read
             byte[] object = (byte[]) objectOutputStream.readObject();
-            return new SecretKeySpec(object, 0, object.length, sessionKeyAlgorithm);
+            return new SecretKeySpec(object, 0, object.length, "AES");
         } catch(IOException | ClassNotFoundException | NoSuchPaddingException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException e){
             e.getMessage();
             e.printStackTrace();
