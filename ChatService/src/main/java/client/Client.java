@@ -161,6 +161,8 @@ public class Client {
             System.out.println("Estou ligado!!!");
             String message = client.readMessage();
             System.out.println("Recebi " + message);
+
+            //FIXME: ONCE WE CAN SEND MESSAGES VIA SESSION KEY TRY SENDING A CERTIFICATE AND VALIDATING IT
         }
     }
 }
