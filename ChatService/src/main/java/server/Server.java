@@ -194,6 +194,10 @@ public class Server {
     public boolean sendMessage(byte[] message, Socket socket, Key key) {
         try{
             initCipher(Cipher.ENCRYPT_MODE, key, sessionKeyAlgorithm);
+            ObjectOutputStream ivSender = new ObjectOutputStream(socket.getOutputStream());
+            ivSender.writeObject(cipher.getIV());
+            //ivSender.close();
+
             CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), cipher);
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(cipherOutputStream);
             objectOutputStream.writeObject(message);
@@ -212,9 +216,10 @@ public class Server {
             initCipher(Cipher.DECRYPT_MODE, privateKey, serverKeyAlgorithm);
             //Get InputStream
             CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), cipher);
-            ObjectInputStream objectOutputStream = new ObjectInputStream(cipherInputStream);
+            ObjectInputStream objectInputStream = new ObjectInputStream(cipherInputStream);
             //Read object and create a new key from the object read
-            byte[] object = (byte[]) objectOutputStream.readObject();
+            byte[] object = (byte[]) objectInputStream.readObject();
+            //objectInputStream.close();
             return new SecretKeySpec(object, 0, object.length, "AES");
         } catch(IOException | ClassNotFoundException | NoSuchPaddingException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException e){
             e.getMessage();

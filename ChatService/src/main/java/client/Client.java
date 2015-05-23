@@ -1,10 +1,8 @@
 package client;
 
 import javax.crypto.*;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import javax.crypto.spec.IvParameterSpec;
+import java.io.*;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.X509Certificate;
@@ -46,8 +44,8 @@ public class Client {
         try {
             socket = new Socket(serverHost, portNumber);
             //Generate a session key and send it to the server
-            SecretKey newCommunicationKey = generateSessionKey();
-            if(!sendSessionKey(newCommunicationKey)) {
+            communicationKey = generateSessionKey();
+            if(!sendSessionKey(communicationKey)) {
                 System.out.println("Could not send session key to the server!");
                 return false;
             }
@@ -97,18 +95,28 @@ public class Client {
         }
     }
 
-    private void initCipher(int mode, Key key, String method) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException {
+    private void initCipher(int mode, Key key, String method, byte[] iv) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException {
         cipher = Cipher.getInstance(method, "BC");
         if (mode == Cipher.ENCRYPT_MODE)
             cipher.init(mode, key, secureRandom);
-        else
-            cipher.init(mode, key);
+        else {
+            IvParameterSpec ivSpec = new IvParameterSpec(iv);
+            try {
+                cipher.init(mode, key, ivSpec);
+            } catch (InvalidAlgorithmParameterException e){
+                e.getMessage();
+                e.printStackTrace();
+            }
+        }
     }
 
     private String readMessage() {
         try{
+            ObjectInputStream ivStream = new ObjectInputStream(socket.getInputStream());
+            byte [] iv = (byte [])ivStream.readObject();
+
             //Initialize cipher
-            initCipher(Cipher.DECRYPT_MODE, communicationKey, sessionKeyAlgorithm);
+            initCipher(Cipher.DECRYPT_MODE, communicationKey, sessionKeyAlgorithm, iv);
             //Get InputStream
             CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), cipher);
             ObjectInputStream objectOutputStream = new ObjectInputStream(cipherInputStream);
@@ -129,11 +137,11 @@ public class Client {
     private boolean sendSessionKey(SecretKey sessionKey) {
         try{
             //Encrypt with the server's public key
-            initCipher(Cipher.ENCRYPT_MODE, serverPublicKey, serverEncryptionAlgorithm);
+            initCipher(Cipher.ENCRYPT_MODE, serverPublicKey, serverEncryptionAlgorithm, null);
             CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), cipher);
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(cipherOutputStream);
             objectOutputStream.writeObject(sessionKey.getEncoded());
-            objectOutputStream.close();
+            objectOutputStream.close(); //Fixme This should not happen!
             return true;
         } catch (IOException | InvalidKeyException | NoSuchPaddingException | NoSuchProviderException |NoSuchAlgorithmException e) {
             e.getMessage();
