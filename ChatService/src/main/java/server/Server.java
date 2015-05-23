@@ -1,6 +1,7 @@
 package server;
 
 import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.ServerSocket;
@@ -26,7 +27,6 @@ public class Server {
     private PrivateKey privateKey;
     private PublicKey publicKey;
     private ServerSocket serverSocket;
-    private Cipher cipher;
     private CertificateFactory certificateFactory;
     private X509Certificate caCertificate;
 
@@ -38,7 +38,7 @@ public class Server {
         publicKeyFilePath = "Server-PublicKey.ser";
         privateKeyFilePath = "Server-PrivateKey.ser";
         caCertificateFilePath = "CA-Certificate.ser";
-        sessionKeyAlgorithm = "AES/CTS/PKCS5Padding";
+        sessionKeyAlgorithm = "AES/CFB8/NoPadding"; //CFB8 sends data in blocks of 8 bits = 1 byte
         serverKeyAlgorithm = "RSA/None/PKCS1Padding";
         certificateType = "X.509";
         certificateFactory = null;
@@ -178,50 +178,96 @@ public class Server {
         }
     }
 
-    public void initCipher(int mode, Key key, String method) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException {
-        cipher = Cipher.getInstance(method, "BC");
-        if (mode == Cipher.ENCRYPT_MODE)
-            cipher.init(mode, key, secureRandom);
-        else
-            cipher.init(mode, key);
+    private Cipher initCipher(int mode, Key key, String method, byte[] iv) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException {
+        Cipher out;
+        if (mode == Cipher.ENCRYPT_MODE) {
+            out = Cipher.getInstance(method, "BC");
+            out.init(mode, key, secureRandom);
+        }
+        else {
+            try {
+                out = Cipher.getInstance(method, "BC");
+                if(iv != null){
+                    IvParameterSpec ivSpec = new IvParameterSpec(iv);
+                    out.init(mode, key, ivSpec);
+                }
+                else {
+                    out.init(mode, key);
+                }
+
+            } catch (InvalidAlgorithmParameterException e){
+                e.getMessage();
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        return  out;
     }
 
-    private byte[] readMessage(Socket socket, Key key) {
-
-        return null;
+    private String readMessage(ObjectInputStream stream) {
+        try {
+            return (String) stream.readObject();
+        } catch (IOException|ClassNotFoundException e){
+            e.getMessage();
+            e.printStackTrace();
+            return null;
+        }
     }
 
-    public boolean sendMessage(byte[] message, Socket socket, Key key) {
+    public boolean sendMessage(String message, ObjectOutputStream stream) {
         try{
-            initCipher(Cipher.ENCRYPT_MODE, key, sessionKeyAlgorithm);
-            ObjectOutputStream ivSender = new ObjectOutputStream(socket.getOutputStream());
-            ivSender.writeObject(cipher.getIV());
-            //ivSender.close();
-
-            CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), cipher);
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(cipherOutputStream);
-            objectOutputStream.writeObject(message);
-            objectOutputStream.close();
+            stream.writeObject(message);
+            stream.flush();
             return true;
-        } catch (NoSuchPaddingException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | IOException e) {
+        } catch (IOException e) {
             e.getMessage();
             e.printStackTrace();
             return false;
         }
     }
 
-    public SecretKey receiveSessionKey(Socket socket) {
+    public ObjectStreamBundle receiveSessionKey(Socket socket) {
         try{
-            //Initialize cipher
-            initCipher(Cipher.DECRYPT_MODE, privateKey, serverKeyAlgorithm);
+
+
+            //Use private key to decrypt session key
+            Cipher rsaCipher = initCipher(Cipher.DECRYPT_MODE, privateKey, serverKeyAlgorithm, null);
+            ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+            byte [] encryptedSessionKey = (byte[])objectInputStream.readObject();
+
+            byte[] sessionKeyEncoded = rsaCipher.doFinal(encryptedSessionKey);
+            SecretKey sessionKey =  new SecretKeySpec(sessionKeyEncoded, 0, sessionKeyEncoded.length, "AES") ;
+
+            //Receiving the initial IV for the input cypher
+            byte [] inputIV = (byte[])objectInputStream.readObject();
+            Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, sessionKey, sessionKeyAlgorithm, inputIV);
+
+            //Sending the initial IV of the output cipher
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+            Cipher outputCipher = initCipher(Cipher.ENCRYPT_MODE, sessionKey, sessionKeyAlgorithm, null);
+            objectOutputStream.writeObject(outputCipher.getIV());
+            objectOutputStream.flush();
+
+            //Creating the real communications stream
+            CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
+            ObjectOutputStream outputStream = new ObjectOutputStream(cipherOutputStream);
+            outputStream.flush();
+            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), inputCipher);
+            ObjectInputStream inputStream = new ObjectInputStream(cipherInputStream);
+
+            return  new ObjectStreamBundle(inputStream, outputStream);
+
+            /*
             //Get InputStream
-            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), cipher);
+            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), outputCipher);
             ObjectInputStream objectInputStream = new ObjectInputStream(cipherInputStream);
             //Read object and create a new key from the object read
             byte[] object = (byte[]) objectInputStream.readObject();
             //objectInputStream.close();
-            return new SecretKeySpec(object, 0, object.length, "AES");
-        } catch(IOException | ClassNotFoundException | NoSuchPaddingException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException e){
+            return new SecretKeySpec(object, 0, object.length, "AES");*/
+        } catch(IOException | ClassNotFoundException | NoSuchPaddingException | NoSuchAlgorithmException |
+                IllegalBlockSizeException| BadPaddingException | NoSuchProviderException | InvalidKeyException e){
             e.getMessage();
             e.printStackTrace();
             return null;
@@ -235,6 +281,7 @@ public class Server {
         return false;
     }
 
+    /*FIXME I commented these 2 methods because the read message conflicted with the new one
     public boolean authenticateClient(Socket clientSocket) {
         //Reads a client's certificate from the socket and validates it!
         //X509Certificate clientCertificate = getClientCertificateFromSocket(clientSocket);
@@ -263,7 +310,7 @@ public class Server {
             e.printStackTrace();
             return null;
         }
-    }
+    }*/
 
     private boolean validateClientCertificate(X509Certificate clientCertificate) {
         try {
@@ -334,5 +381,15 @@ public class Server {
             System.exit(-1);
         }
 
+    }
+
+    public class ObjectStreamBundle{
+        public ObjectOutputStream outputStream;
+        public ObjectInputStream inputStream;
+
+        public ObjectStreamBundle(ObjectInputStream in, ObjectOutputStream out) {
+            inputStream = in;
+            outputStream = out;
+        }
     }
 }

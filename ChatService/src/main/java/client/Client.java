@@ -20,7 +20,8 @@ public class Client {
     private Key serverPublicKey;
     private SecretKey communicationKey; //The session key
     private Socket socket;
-    private Cipher cipher;
+    private ObjectInputStream inputStream;
+    private  ObjectOutputStream outputStream;
     private X509Certificate certificate;
     private String name;
 
@@ -29,12 +30,11 @@ public class Client {
         SESSIONKEYSIZE = 128;
         serverPublicKeyFilePath = "Server-PublicKey.ser";
         serverHost = "localhost";
-        sessionKeyAlgorithm = "AES/CTS/PKCS5Padding";
+        sessionKeyAlgorithm = "AES/CFB8/NoPadding";
         serverEncryptionAlgorithm = "RSA/None/PKCS1Padding";
         serverPublicKey = null;
         communicationKey = null;
         socket = null;
-        cipher = null;
         certificate = null;
         this.name = name;
         secureRandom = new SecureRandom();
@@ -95,55 +95,80 @@ public class Client {
         }
     }
 
-    private void initCipher(int mode, Key key, String method, byte[] iv) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException {
-        cipher = Cipher.getInstance(method, "BC");
-        if (mode == Cipher.ENCRYPT_MODE)
-            cipher.init(mode, key, secureRandom);
+    private Cipher initCipher(int mode, Key key, String method, byte[] iv) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException {
+        Cipher out;
+        if (mode == Cipher.ENCRYPT_MODE) {
+             out = Cipher.getInstance(method, "BC");
+            out.init(mode, key, secureRandom);
+        }
         else {
             IvParameterSpec ivSpec = new IvParameterSpec(iv);
             try {
-                cipher.init(mode, key, ivSpec);
+                out = Cipher.getInstance(method, "BC");
+                out.init(mode, key, ivSpec);
             } catch (InvalidAlgorithmParameterException e){
                 e.getMessage();
                 e.printStackTrace();
+                return null;
             }
+        }
+        return out;
+    }
+
+    public boolean sendMessage(String message) {
+        try{
+            outputStream.writeObject(message);
+            outputStream.flush();
+            return true;
+        } catch (IOException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
         }
     }
 
     private String readMessage() {
-        try{
-            ObjectInputStream ivStream = new ObjectInputStream(socket.getInputStream());
-            byte [] iv = (byte [])ivStream.readObject();
-
-            //Initialize cipher
-            initCipher(Cipher.DECRYPT_MODE, communicationKey, sessionKeyAlgorithm, iv);
-            //Get InputStream
-            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), cipher);
-            ObjectInputStream objectOutputStream = new ObjectInputStream(cipherInputStream);
-            //Read object and create a new key from the object read
-            byte[] object = (byte[]) objectOutputStream.readObject();
-            return new String(object);
-        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | ClassNotFoundException | NoSuchProviderException | IOException e) {
+        try {
+            return (String) inputStream.readObject();
+        } catch (IOException|ClassNotFoundException e){
             e.getMessage();
             e.printStackTrace();
             return null;
         }
     }
 
-    private boolean sendMessage() {
-        return true;
-    }
-
     private boolean sendSessionKey(SecretKey sessionKey) {
         try{
             //Encrypt with the server's public key
-            initCipher(Cipher.ENCRYPT_MODE, serverPublicKey, serverEncryptionAlgorithm, null);
-            CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), cipher);
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(cipherOutputStream);
-            objectOutputStream.writeObject(sessionKey.getEncoded());
-            objectOutputStream.close(); //Fixme This should not happen!
+            Cipher rsaCipher = initCipher(Cipher.ENCRYPT_MODE, serverPublicKey, serverEncryptionAlgorithm, null);
+            byte [] sessionKeyEncripted = rsaCipher.doFinal(sessionKey.getEncoded());
+
+            //Sending the session key encrypted
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+            objectOutputStream.writeObject(sessionKeyEncripted);
+            objectOutputStream.flush();
+
+            //Sending the initial IV of the output cipher
+            Cipher outputCipher = initCipher(Cipher.ENCRYPT_MODE, sessionKey, sessionKeyAlgorithm, null);
+            objectOutputStream.writeObject(outputCipher.getIV());
+            objectOutputStream.flush();
+
+            //Receiving the initial IV for the input cypher
+            ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+            byte [] inputIV = (byte[])objectInputStream.readObject();
+            Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, sessionKey, sessionKeyAlgorithm, inputIV);
+
+            //Creating the real communications stream
+            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), inputCipher);
+            inputStream = new ObjectInputStream(cipherInputStream);
+            CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
+            outputStream = new ObjectOutputStream(cipherOutputStream);
+            outputStream.flush();
+
+
             return true;
-        } catch (IOException | InvalidKeyException | NoSuchPaddingException | NoSuchProviderException |NoSuchAlgorithmException e) {
+        } catch (IllegalBlockSizeException | BadPaddingException | IOException | InvalidKeyException | NoSuchPaddingException
+                | NoSuchProviderException |NoSuchAlgorithmException | ClassNotFoundException e){
             e.getMessage();
             e.printStackTrace();
             return false;
