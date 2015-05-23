@@ -1,5 +1,7 @@
 package client;
 
+import ca.CAClient;
+
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.*;
@@ -7,7 +9,7 @@ import java.net.Socket;
 import java.security.*;
 import java.security.cert.X509Certificate;
 
-public class Client {
+public class Client extends CAClient{
 
     private final int portNumber;
     private final String serverPublicKeyFilePath;
@@ -69,10 +71,6 @@ public class Client {
         }
     }
 
-    private boolean loadStuff() {
-        return this.loadServerPublicKey() && this.loadClientCertificate();
-    }
-
     private boolean loadServerPublicKey() {
         try {
             ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(serverPublicKeyFilePath));
@@ -90,7 +88,6 @@ public class Client {
             certificate = (X509Certificate) ois.readObject();
             return true;
         } catch(IOException | ClassNotFoundException exception) {
-            exception.printStackTrace();
             return false;
         }
     }
@@ -186,10 +183,19 @@ public class Client {
         //Create the client and connect it to the Chat Server
             client = new Client(args[0]);
 
-        if (!client.loadStuff()) {
-            System.out.println("Could not load the client's certificate or the server's public key. Please try again later...");
-            System.exit(1);
+        if (!client.loadClientCertificate()) {
+            if(!client.requestCertificate(client.name)) {
+                System.out.println("Could not connect with CA!");
+                System.exit(1);
+            }
         }
+
+        if(!client.loadServerPublicKey()){
+            //TODO Connect with server to get public key + Certificate
+            System.out.println("Could not load server key");
+            //TODO Connect with CA to verify certificate
+        }
+
         if (client.connectToServer()) {
             System.out.println("Estou ligado!!!");
             String message = client.readMessage();

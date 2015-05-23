@@ -1,5 +1,7 @@
 package server;
 
+import ca.CAClient;
+
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -9,11 +11,10 @@ import java.net.Socket;
 import java.security.*;
 import java.security.cert.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class Server {
+public class Server extends CAClient{
 
     private final int portNumber;
     private final String publicKeyFilePath;
@@ -140,8 +141,6 @@ public class Server {
             ois.close();
             return true;
         }catch (ClassNotFoundException | IOException e) {
-            e.getMessage();
-            e.printStackTrace();
             return false;
         }
     }
@@ -369,8 +368,10 @@ public class Server {
         }
 
         if (!server.loadCACertificate()) {
-            System.out.println("Could not load the CA's certificate!");
-            System.exit(-1);
+            if(!server.requestCertificate(server.caCertificateFilePath)) {
+                System.out.println("Could not connect with CA!");
+                System.exit(-1);
+            }
         }
 
         if (server.connectServer() && server.loadCertificateFactory()) {

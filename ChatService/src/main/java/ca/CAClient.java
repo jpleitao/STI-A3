@@ -1,10 +1,10 @@
-package client;
+package ca;
 
 import java.io.*;
 import java.net.Socket;
 import java.security.cert.X509Certificate;
 
-public class CAClient {
+public abstract class CAClient {
 
     private final String cAHost;
     private final int cAPort;
@@ -16,7 +16,7 @@ public class CAClient {
         cAsocket = null;
     }
 
-    private void connectToCA(String clientName) {
+    protected boolean requestCertificate(String clientName) {
         try {
             cAsocket = new Socket(cAHost, cAPort);
 
@@ -31,8 +31,10 @@ public class CAClient {
 
             //Save it to a file
             saveCertificateToFile(certificate, clientName);
+            return true;
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
+            return  false;
         }
     }
 
@@ -42,6 +44,8 @@ public class CAClient {
         oos.close();
     }
 
+    /*
+
     public static void main(String[] args) {
         CAClient client = new CAClient();
 
@@ -49,5 +53,5 @@ public class CAClient {
             client.connectToCA("Client");
         else
             client.connectToCA(args[0]);
-    }
+    }*/
 }
