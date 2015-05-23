@@ -242,6 +242,28 @@ public class Server extends CAClient{
         }
     }
 
+    public boolean sendPublicKeyToClient(Socket socket) {
+        try {
+            ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+
+            //Receive boolean value
+            boolean request = objectInputStream.readBoolean();
+
+            if (request) {
+                //Send public key to client
+                objectOutputStream.writeObject(publicKey);
+                objectOutputStream.flush();
+            }
+            return true;
+        } catch(IOException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+
     public ObjectStreamBundle receiveSessionKey(Socket socket) {
         try{
             //Use private key to decrypt session key

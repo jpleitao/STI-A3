@@ -53,9 +53,15 @@ public class Client extends CAClient{
         caCertificateFilePath = "CA-Certificate.ser";
     }
 
-    private boolean connectToServer() {
+    private boolean connectToServer(boolean requestServerPublicKey) {
         try {
             socket = new Socket(serverHost, portNumber);
+
+            if (!getServerPublicKey(socket, requestServerPublicKey)) {
+                System.out.println("Could not request server public key");
+                return false;
+            }
+
             //Generate a session key and send it to the server
             communicationKey = generateSessionKey();
             if(!sendSessionKey(communicationKey)) {
@@ -93,6 +99,25 @@ public class Client extends CAClient{
         }
     }
 
+    private boolean getServerPublicKey(Socket socket, boolean sendRequest) {
+
+        try {
+            //Send the server a boolean value to inform of the client's need to get its public key
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+            ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
+
+            objectOutputStream.writeBoolean(sendRequest);
+            objectOutputStream.flush();
+
+            if (sendRequest)
+                serverPublicKey = (Key) objectInputStream.readObject();
+            return true;
+        } catch (IOException | ClassNotFoundException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+    }
 
     private SecretKey generateSessionKey(){
         try {
@@ -258,6 +283,7 @@ public class Client extends CAClient{
     public static void main(String[] args) {
         //Call it Magic: Add Bouncy Castle as Provider
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+        boolean requestServerPublicKey = false;
 
         Client client;
         if (args.length != 1)
@@ -286,12 +312,12 @@ public class Client extends CAClient{
         }
 
         if(!client.loadServerPublicKey()){
-            //TODO Connect with server to get public key + Certificate
-            System.out.println("Could not load server key");
-            //TODO Connect with CA to verify certificate
+            //Request the server's public key after establishing the connection
+            requestServerPublicKey = true;
+            System.out.println("Could not load server key. Will request it upon connection");
         }
 
-        if (client.connectToServer()) {
+        if (client.connectToServer(requestServerPublicKey)) {
             //Receive certificate from Server and validate it
             if (!client.receiveAndValidateServerCertificate()) {
                 System.out.println("Could not receive Server's Certificate or invalid Server's Certificate");
@@ -303,7 +329,6 @@ public class Client extends CAClient{
                 System.out.println("Could not send certificate to server");
                 System.exit(-1);
             }
-
 
             System.out.println("Estou ligado!!!");
             String message = client.readMessage();

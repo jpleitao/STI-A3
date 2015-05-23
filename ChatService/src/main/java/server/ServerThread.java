@@ -16,6 +16,12 @@ public class ServerThread extends Thread{
     public void run() {
         //FIXME: Meter isto num ciclo infinito ou assim a fazer os passos todos
 
+        System.out.println("Going to see if I need to send my public key to the client");
+        if (!server.sendPublicKeyToClient(clientSocket)) {
+            System.out.println("Could not send public key to client");
+            return;
+        }
+
         System.out.println("Going to wait for the client's session key");
         streams = server.receiveSessionKey(clientSocket);
 
