@@ -23,6 +23,7 @@ public class Server extends CAClient{
     private final String sessionKeyAlgorithm;
     private final String serverKeyAlgorithm;
     private final String certificateType;
+    private final String certificateFilePath;
 
     private SecureRandom secureRandom;
     private PrivateKey privateKey;
@@ -30,6 +31,7 @@ public class Server extends CAClient{
     private ServerSocket serverSocket;
     private CertificateFactory certificateFactory;
     private X509Certificate caCertificate;
+    private X509Certificate certificate;
 
     private static final int KEYSIZE = 512;
     private static final int SESSIONKEYSIZE = 128;
@@ -39,11 +41,13 @@ public class Server extends CAClient{
         publicKeyFilePath = "Server-PublicKey.ser";
         privateKeyFilePath = "Server-PrivateKey.ser";
         caCertificateFilePath = "CA-Certificate.ser";
+        certificateFilePath = "Server-Certificate.cer";
         sessionKeyAlgorithm = "AES/CFB8/NoPadding"; //CFB8 sends data in blocks of 8 bits = 1 byte
         serverKeyAlgorithm = "RSA/None/PKCS1Padding";
         certificateType = "X.509";
         certificateFactory = null;
         caCertificate = null;
+        certificate = null;
         secureRandom = new SecureRandom();
     }
 
@@ -177,6 +181,18 @@ public class Server extends CAClient{
         }
     }
 
+    private boolean loadCertificate() {
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(certificateFilePath));
+            certificate = (X509Certificate) ois.readObject();
+            return true;
+        } catch (IOException | ClassNotFoundException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     private Cipher initCipher(int mode, Key key, String method, byte[] iv) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException {
         Cipher out;
         if (mode == Cipher.ENCRYPT_MODE) {
@@ -228,8 +244,6 @@ public class Server extends CAClient{
 
     public ObjectStreamBundle receiveSessionKey(Socket socket) {
         try{
-
-
             //Use private key to decrypt session key
             Cipher rsaCipher = initCipher(Cipher.DECRYPT_MODE, privateKey, serverKeyAlgorithm, null);
             ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
@@ -256,15 +270,6 @@ public class Server extends CAClient{
             ObjectInputStream inputStream = new ObjectInputStream(cipherInputStream);
 
             return  new ObjectStreamBundle(inputStream, outputStream);
-
-            /*
-            //Get InputStream
-            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), outputCipher);
-            ObjectInputStream objectInputStream = new ObjectInputStream(cipherInputStream);
-            //Read object and create a new key from the object read
-            byte[] object = (byte[]) objectInputStream.readObject();
-            //objectInputStream.close();
-            return new SecretKeySpec(object, 0, object.length, "AES");*/
         } catch(IOException | ClassNotFoundException | NoSuchPaddingException | NoSuchAlgorithmException |
                 IllegalBlockSizeException| BadPaddingException | NoSuchProviderException | InvalidKeyException e){
             e.getMessage();
@@ -273,43 +278,30 @@ public class Server extends CAClient{
         }
     }
 
-    public boolean sendKeyToClient(Socket clientSocket, byte[] keyEncoded, Key previousKey) {
-
-        //New Session Key -- Message to send first
-
-        return false;
-    }
-
-    /*FIXME I commented these 2 methods because the read message conflicted with the new one
-    public boolean authenticateClient(Socket clientSocket) {
-        //Reads a client's certificate from the socket and validates it!
-        //X509Certificate clientCertificate = getClientCertificateFromSocket(clientSocket);
-        //return clientCertificate != null && validateClientCertificate(clientCertificate);
-
-        //FIXME: CHANGE THIS TO READ THE CERTIFICATE
-        byte[] message = readMessage(clientSocket, privateKey);
-        System.out.println("Read " + message.length + " bytes");
-
-        return false;
-    }
-
-    private X509Certificate getClientCertificateFromSocket(Socket socket) {
-        //Read the client's certificate from the socket and validate it
+    public boolean sendCertificateToClient(ObjectOutputStream outputStream) {
         try {
-            //Read certificate from socket
-            System.out.println("Vou ler o certificado");
-            byte[] certificateEncoded = readMessage(socket, privateKey);
-
-            System.out.println("GOT " + Arrays.toString(certificateEncoded));
-
-            //Convert it to a X509Certificate certificate
-            return certificateEncoded==null ? null:(X509Certificate) certificateFactory.generateCertificate(new ByteArrayInputStream(certificateEncoded));
-        } catch (CertificateException e) {
+            System.out.println("Going to send the certificate to the client");
+            outputStream.writeObject(certificate);
+            outputStream.flush();
+            return true;
+        } catch (IOException e) {
             e.getMessage();
             e.printStackTrace();
-            return null;
+            return false;
         }
-    }*/
+    }
+
+    public boolean receiveAndValidateServerCertificate(ObjectInputStream inputStream) {
+        try {
+            X509Certificate clientCertificate = (X509Certificate) inputStream.readObject();
+            return validateClientCertificate(clientCertificate);
+        } catch(IOException | ClassNotFoundException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+
+    }
 
     private boolean validateClientCertificate(X509Certificate clientCertificate) {
         try {
@@ -325,9 +317,7 @@ public class Server extends CAClient{
             CertPathValidator cpv = CertPathValidator.getInstance("PKIX");
             PKIXCertPathValidatorResult pkixCertPathValidatorResult = (PKIXCertPathValidatorResult) cpv.validate(cp, params);
 
-            //FIXME: Ver ao certo o que e que isto retorna
-            System.out.println("\n\n\n\n\n\n\n\n\n\n\n" + pkixCertPathValidatorResult);
-            return true;
+            return pkixCertPathValidatorResult != null;
         } catch (NoSuchAlgorithmException | CertificateException | InvalidAlgorithmParameterException | CertPathValidatorException e) {
             e.getMessage();
             e.printStackTrace();
@@ -369,6 +359,13 @@ public class Server extends CAClient{
 
         if (!server.loadCACertificate()) {
             if(!server.requestCertificate(server.caCertificateFilePath)) {
+                System.out.println("Could not connect with CA!");
+                System.exit(-1);
+            }
+        }
+
+        if (!server.loadCertificate()) {
+            if (!server.requestCertificate("certificateFilePath")) {
                 System.out.println("Could not connect with CA!");
                 System.exit(-1);
             }

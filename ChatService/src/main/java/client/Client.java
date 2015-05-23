@@ -7,7 +7,10 @@ import javax.crypto.spec.IvParameterSpec;
 import java.io.*;
 import java.net.Socket;
 import java.security.*;
-import java.security.cert.X509Certificate;
+import java.security.cert.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Client extends CAClient{
 
@@ -17,15 +20,19 @@ public class Client extends CAClient{
     private final String sessionKeyAlgorithm;
     private final String serverEncryptionAlgorithm;
     private final int SESSIONKEYSIZE;
+    private final String certificateType;
+    private final String caCertificateFilePath;
 
     private SecureRandom secureRandom;
     private Key serverPublicKey;
     private SecretKey communicationKey; //The session key
     private Socket socket;
     private ObjectInputStream inputStream;
-    private  ObjectOutputStream outputStream;
+    private ObjectOutputStream outputStream;
     private X509Certificate certificate;
+    private X509Certificate caCertificate;
     private String name;
+    private CertificateFactory certificateFactory;
 
     public Client(String name) {
         portNumber = 9996;
@@ -40,6 +47,10 @@ public class Client extends CAClient{
         certificate = null;
         this.name = name;
         secureRandom = new SecureRandom();
+        certificateFactory = null;
+        certificateType = "X.509";
+        caCertificate = null;
+        caCertificateFilePath = "CA-Certificate.ser";
     }
 
     private boolean connectToServer() {
@@ -58,6 +69,30 @@ public class Client extends CAClient{
             return false;
         }
     }
+
+    private boolean loadCertificateFactory() {
+        try {
+            certificateFactory = CertificateFactory.getInstance(certificateType);
+            return true;
+        } catch (CertificateException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private boolean loadCACertificate() {
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(caCertificateFilePath));
+            caCertificate = (X509Certificate) ois.readObject();
+            return true;
+        } catch (IOException | ClassNotFoundException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+    }
+
 
     private SecretKey generateSessionKey(){
         try {
@@ -92,6 +127,51 @@ public class Client extends CAClient{
         }
     }
 
+    private boolean sendCertificateToServer() {
+        try {
+            outputStream.writeObject(certificate);
+            outputStream.flush();
+            return true;
+        } catch (IOException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private boolean receiveAndValidateServerCertificate() {
+
+        try {
+            X509Certificate serverCertificate = (X509Certificate) inputStream.readObject();
+            return validateServerCertificate(serverCertificate);
+        } catch (ClassNotFoundException | IOException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private boolean validateServerCertificate(X509Certificate certificate) {
+        try {
+            //Check the chain
+            List<X509Certificate> mylist = new ArrayList<>();
+            mylist.add(certificate);
+            CertPath cp = certificateFactory.generateCertPath(mylist);
+
+            TrustAnchor anchor = new TrustAnchor(caCertificate, null);
+            PKIXParameters params = new PKIXParameters(Collections.singleton(anchor));
+            params.setRevocationEnabled(false);
+
+            CertPathValidator cpv = CertPathValidator.getInstance("PKIX");
+            PKIXCertPathValidatorResult pkixCertPathValidatorResult = (PKIXCertPathValidatorResult) cpv.validate(cp, params);
+
+            return pkixCertPathValidatorResult != null;
+        } catch (NoSuchAlgorithmException | CertificateException | InvalidAlgorithmParameterException | CertPathValidatorException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+    }
     private Cipher initCipher(int mode, Key key, String method, byte[] iv) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException {
         Cipher out;
         if (mode == Cipher.ENCRYPT_MODE) {
@@ -135,6 +215,10 @@ public class Client extends CAClient{
     }
 
     private boolean sendSessionKey(SecretKey sessionKey) {
+
+        if (sessionKey == null)
+            return false;
+
         try{
             //Encrypt with the server's public key
             Cipher rsaCipher = initCipher(Cipher.ENCRYPT_MODE, serverPublicKey, serverEncryptionAlgorithm, null);
@@ -162,7 +246,6 @@ public class Client extends CAClient{
             outputStream = new ObjectOutputStream(cipherOutputStream);
             outputStream.flush();
 
-
             return true;
         } catch (IllegalBlockSizeException | BadPaddingException | IOException | InvalidKeyException | NoSuchPaddingException
                 | NoSuchProviderException |NoSuchAlgorithmException | ClassNotFoundException e){
@@ -183,6 +266,18 @@ public class Client extends CAClient{
         //Create the client and connect it to the Chat Server
             client = new Client(args[0]);
 
+        if (!client.loadCertificateFactory()) {
+            System.out.println("Could not load certificate factory");
+            System.exit(-1);
+        }
+
+        if (!client.loadCACertificate()) {
+            if(!client.requestCertificate(client.caCertificateFilePath)) {
+                System.out.println("Could not connect with CA!");
+                System.exit(-1);
+            }
+        }
+
         if (!client.loadClientCertificate()) {
             if(!client.requestCertificate(client.name)) {
                 System.out.println("Could not connect with CA!");
@@ -197,9 +292,23 @@ public class Client extends CAClient{
         }
 
         if (client.connectToServer()) {
+            //Receive certificate from Server and validate it
+            if (!client.receiveAndValidateServerCertificate()) {
+                System.out.println("Could not receive Server's Certificate or invalid Server's Certificate");
+                System.exit(-1);
+            }
+
+            //Send Certificate to Server
+            if (!client.sendCertificateToServer()) {
+                System.out.println("Could not send certificate to server");
+                System.exit(-1);
+            }
+
+
             System.out.println("Estou ligado!!!");
             String message = client.readMessage();
             System.out.println("Recebi " + message);
+
 
             //FIXME: ONCE WE CAN SEND MESSAGES VIA SESSION KEY TRY SENDING A CERTIFICATE AND VALIDATING IT
         }
