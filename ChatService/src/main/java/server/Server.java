@@ -1,6 +1,7 @@
 package server;
 
 import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -18,7 +19,10 @@ public class Server {
     private final String privateKeyFilePath;
     private final String caCertificateFilePath;
     private final String sessionKeyAlgorithm;
+    private final String serverKeyAlgorithm;
+    private final String certificateType;
 
+    private SecureRandom secureRandom;
     private PrivateKey privateKey;
     private PublicKey publicKey;
     private ServerSocket serverSocket;
@@ -34,14 +38,17 @@ public class Server {
         publicKeyFilePath = "Server-PublicKey.ser";
         privateKeyFilePath = "Server-PrivateKey.ser";
         caCertificateFilePath = "CA-Certificate.ser";
-        sessionKeyAlgorithm = "AES";
+        sessionKeyAlgorithm = "AES/CBC/PKCS5Padding";
+        serverKeyAlgorithm = "RSA/None/PKCS1Padding";
+        certificateType = "X.509";
         certificateFactory = null;
         caCertificate = null;
+        secureRandom = new SecureRandom();
     }
 
     private boolean loadCertificateFactory() {
         try {
-            certificateFactory = CertificateFactory.getInstance("X.509");
+            certificateFactory = CertificateFactory.getInstance(certificateType);
             return true;
         } catch (CertificateException e) {
             e.getMessage();
@@ -102,12 +109,12 @@ public class Server {
 
     private KeyPair generateKeyPair() {
         try {
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", "BC");
             keyGen.initialize(KEYSIZE);
             return keyGen.genKeyPair();
-        } catch(NoSuchAlgorithmException nsae) {
-            nsae.getMessage();
-            nsae.printStackTrace();
+        } catch(NoSuchAlgorithmException| NoSuchProviderException e) {
+            e.getMessage();
+            e.printStackTrace();
             return null;
         }
     }
@@ -167,107 +174,56 @@ public class Server {
         }
     }
 
-    public void initCipher(int mode, Key key) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
-        cipher = Cipher.getInstance("RSA");
-        cipher.init(mode, key);
-    }
-
-    private byte[] decryptMessage(byte[] messageEncrypted, Key key) {
-        try{
-            initCipher(Cipher.DECRYPT_MODE, key);
-
-            byte[] decrypted = new byte[cipher.getOutputSize(messageEncrypted.length)];
-            int dec_len = cipher.update(messageEncrypted, 0, messageEncrypted.length, decrypted, 0);
-            cipher.doFinal(decrypted, dec_len);
-            decrypted = filterMessage(decrypted);
-            return decrypted;
-        } catch(BadPaddingException | IllegalBlockSizeException | ShortBufferException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e){
-            e.getMessage();
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private byte[] encryptMessage(byte[] messageToEncrypt, Key key) {
-        try{
-            initCipher(Cipher.ENCRYPT_MODE, key);
-
-            byte[] encrypted = new byte[cipher.getOutputSize(messageToEncrypt.length)];
-            int enc_len = cipher.update(messageToEncrypt, 0, messageToEncrypt.length, encrypted, 0);
-            cipher.doFinal(encrypted, enc_len);
-            return encrypted;
-        } catch(BadPaddingException | IllegalBlockSizeException | ShortBufferException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e){
-            e.getMessage();
-            e.printStackTrace();
-            return null;
-        }
+    public void initCipher(int mode, Key key, String method) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException {
+        cipher = Cipher.getInstance(method, "BC");
+        if (mode == Cipher.ENCRYPT_MODE)
+            cipher.init(mode, key, secureRandom);
+        else
+            cipher.init(mode, key);
     }
 
     private byte[] readMessage(Socket socket, Key key) {
-        try {
-            byte[] data = new byte[64];
-            DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
-            int received = dataInputStream.read(data);
-            System.out.println("Before Decryption " + Arrays.toString(data));
-            byte[] decryptedData = decryptMessage(data, key);
-            System.out.println("After Decryption " + Arrays.toString(decryptedData));
 
-            System.out.println("STRING: " + new String(decryptedData));
-
-            return data;
-        } catch (IOException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return null;
-        }
+        return null;
     }
 
-    private boolean sendMessage(byte[] message, Socket socket, Key key) {
-        try {
-            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-            byte[] messageEncrypted = encryptMessage(message, key);
-            if (messageEncrypted == null)
-                return false;
-            System.out.println("Vou enviar " + Arrays.toString(messageEncrypted) + " com len " + messageEncrypted.length);
-            dataOutputStream.write(messageEncrypted, 0, messageEncrypted.length);
+    public boolean sendMessage(byte[] message, Socket socket, Key key) {
+        try{
+            initCipher(Cipher.ENCRYPT_MODE, key, sessionKeyAlgorithm);
+            CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), cipher);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(cipherOutputStream);
+            objectOutputStream.writeObject(message);
+            objectOutputStream.close();
             return true;
-        } catch (IOException e) {
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | IOException e) {
             e.getMessage();
             e.printStackTrace();
             return false;
         }
     }
 
-    private byte[] filterMessage(byte[] byteArray) {
-        int i;
-
-        for (i=byteArray.length-1; i>= 0; i--) {
-            if (byteArray[i] != (byte)0)
-                break;
+    public SecretKey receiveSessionKey(Socket socket) {
+        try{
+            //Initialize cipher
+            initCipher(Cipher.DECRYPT_MODE, privateKey, serverKeyAlgorithm);
+            //Get InputStream
+            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), cipher);
+            ObjectInputStream objectOutputStream = new ObjectInputStream(cipherInputStream);
+            //Read object and create a new key from the object read
+            byte[] object = (byte[]) objectOutputStream.readObject();
+            return new SecretKeySpec(object, 0, object.length, sessionKeyAlgorithm);
+        } catch(IOException | ClassNotFoundException | NoSuchPaddingException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException e){
+            e.getMessage();
+            e.printStackTrace();
+            return null;
         }
-
-        if (i >= 0){
-            byte[] result = new byte[i+1];
-            System.arraycopy(byteArray, 0, result, 0, i + 1);
-            return result;
-        }
-        return null;
     }
 
     public boolean sendKeyToClient(Socket clientSocket, byte[] keyEncoded, Key previousKey) {
-        boolean result;
-        if (previousKey == null) {
-            //First time the client connected, no need to send him the message code to change keys
-            result = sendMessage(keyEncoded, clientSocket, privateKey);
-        }
-        else {
-            String message = "New Session Key";
-            result = sendMessage(message.getBytes(), clientSocket, previousKey);
-            if (!result)
-                return false;
-            result = sendMessage(keyEncoded, clientSocket, previousKey);
-        }
-        return result;
+
+        //New Session Key -- Message to send first
+
+        return false;
     }
 
     public boolean authenticateClient(Socket clientSocket) {
@@ -324,15 +280,6 @@ public class Server {
         }
     }
 
-    private StringBuffer convertKeyToString(Key key) {
-        byte[] keyEncode = key.getEncoded();
-        StringBuffer retString = new StringBuffer();
-        for (byte aKeyEncode : keyEncode) {
-            retString.append(Integer.toHexString(0x0100 + (aKeyEncode & 0x00FF)).substring(1));
-        }
-        return retString;
-    }
-
     private void run() {
         while (true) {
             System.out.println("Listening on socket on port " + portNumber +  "...");
@@ -351,10 +298,14 @@ public class Server {
     }
 
     public static void main(String[] args) {
+        //Add Bouncy Castle as Provider
+        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+
         Server server = new Server();
 
         /*Load Server's Public and Private Keys from disk*/
         if (!server.loadKeys()) {
+            System.out.println("No Key, going to generate");
             if (!server.generateServerKeys()) {
                 System.out.println("Could not generate the server's private and public keys!");
                 System.exit(-1);

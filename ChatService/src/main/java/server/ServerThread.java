@@ -16,12 +16,15 @@ public class ServerThread extends Thread{
 
     public void run() {
         //FIXME: Meter isto num ciclo infinito ou assim a fazer os passos todos
-        System.out.println("Going to generate a session key to the client");
-        //Generate session key
-        sessionKey = server.generateSessionKey();
-        boolean result = server.sendKeyToClient(clientSocket, sessionKey.getEncoded(), null);
-        if (!result)
-            System.out.println("Error sending key to client!");
+
+        System.out.println("Going to wait for the client's session key");
+        sessionKey = server.receiveSessionKey(clientSocket);
+        System.out.println("Received sessionKey " + sessionKey);
+
+        //Try sending a string to the client with the received sessionKey
+        String message = "Hello from Server";
+        boolean result = server.sendMessage(message.getBytes(), clientSocket, sessionKey);
+        System.out.println("Sent message and the result was " + result);
     }
 
 }

@@ -1,14 +1,13 @@
 package client;
 
 import javax.crypto.*;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 
 public class Client {
 
@@ -16,7 +15,10 @@ public class Client {
     private final String serverPublicKeyFilePath;
     private final String serverHost;
     private final String sessionKeyAlgorithm;
+    private final String serverEncryptionAlgorithm;
+    private final int SESSIONKEYSIZE;
 
+    private SecureRandom secureRandom;
     private Key serverPublicKey;
     private SecretKey communicationKey; //The session key
     private Socket socket;
@@ -26,50 +28,47 @@ public class Client {
 
     public Client(String name) {
         portNumber = 9996;
+        SESSIONKEYSIZE = 128;
         serverPublicKeyFilePath = "Server-PublicKey.ser";
         serverHost = "localhost";
-        sessionKeyAlgorithm = "AES";
+        sessionKeyAlgorithm = "AES/CBC/PKCS5Padding";
+        serverEncryptionAlgorithm = "RSA/None/PKCS1Padding";
         serverPublicKey = null;
         communicationKey = null;
         socket = null;
         cipher = null;
         certificate = null;
         this.name = name;
+        secureRandom = new SecureRandom();
     }
 
     private boolean connectToServer() {
         try {
             socket = new Socket(serverHost, portNumber);
-            return receiveSessionKey();
+            //Generate a session key and send it to the server
+            SecretKey newCommunicationKey = generateSessionKey();
+            if(!sendSessionKey(newCommunicationKey)) {
+                System.out.println("Could not send session key to the server!");
+                return false;
+            }
+            System.out.println("Successfully sent session key to the Server");
+            return true;
         } catch(IOException ioexception) {
             ioexception.printStackTrace();
             return false;
         }
     }
 
-    private Key getCurrentKeyEncryption(){
-        if (communicationKey == null)
-        {
-            System.out.println("Going to encrypt with server's public key");
-            return serverPublicKey;
+    private SecretKey generateSessionKey(){
+        try {
+            KeyGenerator keyGen = KeyGenerator.getInstance(sessionKeyAlgorithm);
+            keyGen.init(SESSIONKEYSIZE);
+            return keyGen.generateKey();
+        } catch (NoSuchAlgorithmException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return null;
         }
-        System.out.println("Going to encrypt with communicationKey");
-        return communicationKey;
-        //return communicationKey==null?serverPublicKey:communicationKey;
-    }
-
-    private Key getCurrentKeyDecryption(){
-        //FIXME: THIS MAY NEED TO BE CHANGED IF WE ADD A PUBLIC-PRIVATE KEY TO THE CLIENT
-        return communicationKey==null?serverPublicKey:communicationKey;
-    }
-
-    private boolean receiveSessionKey() {
-        byte[] encodedKey = readMessage();
-        if (encodedKey == null)
-            return false;
-        communicationKey = new SecretKeySpec(encodedKey, 0, encodedKey.length, sessionKeyAlgorithm);
-        System.out.println(communicationKey);
-        return true;
     }
 
     private boolean loadStuff() {
@@ -98,87 +97,45 @@ public class Client {
         }
     }
 
-    private void initCipher(int mode, Key key) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
-        cipher = Cipher.getInstance("RSA");
-        cipher.init(mode, key);
+    private void initCipher(int mode, Key key, String method) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException {
+        cipher = Cipher.getInstance(method, "BC");
+        if (mode == Cipher.ENCRYPT_MODE)
+            cipher.init(mode, key, secureRandom);
+        else
+            cipher.init(mode, key);
     }
 
-    private byte[] filterMessage(byte[] byteArray) {
-        int i;
-
-        for (i=byteArray.length-1; i>= 0; i--) {
-            if (byteArray[i] != (byte)0)
-                break;
-        }
-
-        if (i >= 0){
-            byte[] result = new byte[i+1];
-            System.arraycopy(byteArray, 0, result, 0, i + 1);
-            return result;
-        }
-        return null;
-    }
-
-    private byte[] decryptMessage(byte[] message) {
+    private String readMessage() {
         try{
-            initCipher(Cipher.DECRYPT_MODE, getCurrentKeyDecryption());
-
-            byte[] decrypted = new byte[cipher.getOutputSize(message.length)];
-            int dec_len = cipher.update(message, 0, message.length, decrypted, 0);
-            cipher.doFinal(decrypted, dec_len);
-            decrypted = filterMessage(decrypted);
-            return decrypted;
-        } catch(BadPaddingException | IllegalBlockSizeException | ShortBufferException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e){
+            //Initialize cipher
+            initCipher(Cipher.DECRYPT_MODE, communicationKey, sessionKeyAlgorithm);
+            //Get InputStream
+            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), cipher);
+            ObjectInputStream objectOutputStream = new ObjectInputStream(cipherInputStream);
+            //Read object and create a new key from the object read
+            byte[] object = (byte[]) objectOutputStream.readObject();
+            return new String(object);
+        } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeyException | ClassNotFoundException | NoSuchProviderException | IOException e) {
             e.getMessage();
             e.printStackTrace();
             return null;
         }
     }
 
-    private byte[] readMessage() {
-        try {
-            byte[] data = new byte[socket.getReceiveBufferSize()];
-            DataInputStream dataInputStream = new DataInputStream(socket.getInputStream());
-            int received = dataInputStream.read(data);
-            byte[] decryptedData = decryptMessage(data);
-            System.out.println("Got data " + Arrays.toString(decryptedData));
-            return decryptedData;
-        } catch (IOException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return null;
-        }
+    private boolean sendMessage() {
+        return true;
     }
 
-    private byte[] encryptMessage(byte[] message) {
-        try {
-            initCipher(Cipher.ENCRYPT_MODE, getCurrentKeyEncryption());
-            byte[] encrypted = new byte[cipher.getOutputSize(message.length)];
-            int enc_len = cipher.update(message, 0, message.length, encrypted, 0);
-            cipher.doFinal(encrypted, enc_len);
-            return encrypted;
-        } catch(BadPaddingException | IllegalBlockSizeException | ShortBufferException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private boolean sendMessage(byte[] message) {
-        try {
-            DataOutputStream dataOutputStream = new DataOutputStream(socket.getOutputStream());
-
-            System.out.println("O tamamho da mensagem e de " + message.length);
-            System.out.println("Mensagem Antes da Encriptaçao " + Arrays.toString(message));
-
-            byte[] messageEncrypted = encryptMessage(message);
-            if (messageEncrypted == null)
-                return false;
-            System.out.println("Mensagem Encriptada " + Arrays.toString(messageEncrypted));
-            System.out.println("O len e " + messageEncrypted.length);
-            dataOutputStream.write(messageEncrypted, 0, messageEncrypted.length);
+    private boolean sendSessionKey(SecretKey sessionKey) {
+        try{
+            //Encrypt with the server's public key
+            initCipher(Cipher.ENCRYPT_MODE, serverPublicKey, serverEncryptionAlgorithm);
+            CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), cipher);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(cipherOutputStream);
+            objectOutputStream.writeObject(sessionKey.getEncoded());
+            objectOutputStream.close();
             return true;
-        } catch (IOException e) {
+        } catch (IOException | InvalidKeyException | NoSuchPaddingException | NoSuchProviderException |NoSuchAlgorithmException e) {
             e.getMessage();
             e.printStackTrace();
             return false;
@@ -186,6 +143,9 @@ public class Client {
     }
 
     public static void main(String[] args) {
+        //Call it Magic: Add Bouncy Castle as Provider
+        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+
         Client client;
         if (args.length != 1)
             client = new Client("Client");
@@ -197,7 +157,10 @@ public class Client {
             System.out.println("Could not load the client's certificate or the server's public key. Please try again later...");
             System.exit(1);
         }
-        if (client.connectToServer())
-            System.out.println("lolitos");
+        if (client.connectToServer()) {
+            System.out.println("Estou ligado!!!");
+            String message = client.readMessage();
+            System.out.println("Recebi " + message);
+        }
     }
 }
