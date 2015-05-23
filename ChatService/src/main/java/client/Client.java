@@ -334,12 +334,7 @@ public class Client extends CAClient{
             String message = client.readMessage();
             System.out.println("Recebi " + message);
 
-
-            // FIXME: GENERATE A PAIR PUBLIC KEY - PRIVATE KEY FOR THE CLIENT, SINCE WE ARE GOING TO NEED IT FOR
-            // ASSURING THE AUTENTICITY, INTEGRITY AND NON-REPUDIATION OF THE MESSAGES
-
-            // FIXME: DO NOT FORGET TO SIGN ALL THE MESSAGES SENT TO THE SERVER AND CHECK THE INTEGRITY OF THE MESSAGES
-            // RECEIVED FROM THE SERVER
+            //FIXME: SEE FACEBOOK QUESTION REGARDING ENCRYPTION AND SIGNATURES
         }
     }
 }

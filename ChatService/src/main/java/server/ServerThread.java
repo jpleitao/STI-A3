@@ -50,8 +50,7 @@ public class ServerThread extends Thread{
         boolean result = server.sendMessage(message, streams.outputStream);
         System.out.println("Sent message and the result was " + result);
 
-        // FIXME: DO NOT FORGET TO SIGN ALL THE MESSAGES SENT TO THE CLIENT AND CHECK THE INTEGRITY OF THE MESSAGES
-        // RECEIVED FROM THE CLIENT
+        //FIXME: SEE FACEBOOK QUESTION REGARDING ENCRYPTION AND SIGNATURES
     }
 
 }
