@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="4285d466-a304-4568-8a31-169402c73636" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/client/Client.java" afterPath="$PROJECT_DIR$/src/main/java/client/Client.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/server/Server.java" afterPath="$PROJECT_DIR$/src/main/java/server/Server.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/server/ServerThread.java" afterPath="$PROJECT_DIR$/src/main/java/server/ServerThread.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
@@ -36,8 +35,8 @@
       <file leaf-file-name="Client.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/client/Client.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.6727273">
-              <caret line="316" column="77" selection-start-line="316" selection-start-column="77" selection-end-line="316" selection-end-column="77" />
+            <state vertical-scroll-proportion="0.7709091">
+              <caret line="341" column="39" selection-start-line="341" selection-start-column="39" selection-end-line="341" selection-end-column="39" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -59,7 +58,7 @@
         <entry file="file://$PROJECT_DIR$/src/main/java/server/ServerThread.java">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="19" column="54" selection-start-line="19" selection-start-column="54" selection-end-line="19" selection-end-column="54" />
+              <caret line="52" column="75" selection-start-line="52" selection-start-column="75" selection-end-line="52" selection-end-column="75" />
               <folding />
             </state>
           </provider>
@@ -138,9 +137,9 @@
         <option value="$PROJECT_DIR$/src/main/java/cypherStreamTest/server/ServerThread.java" />
         <option value="$PROJECT_DIR$/src/main/java/cypherStreamTest/client/Client.java" />
         <option value="$PROJECT_DIR$/src/main/java/client/NotClosingOutputStream.java" />
-        <option value="$PROJECT_DIR$/src/main/java/client/Client.java" />
-        <option value="$PROJECT_DIR$/src/main/java/server/ServerThread.java" />
         <option value="$PROJECT_DIR$/src/main/java/server/Server.java" />
+        <option value="$PROJECT_DIR$/src/main/java/server/ServerThread.java" />
+        <option value="$PROJECT_DIR$/src/main/java/client/Client.java" />
       </list>
     </option>
   </component>
@@ -830,7 +829,7 @@
       <workItem from="1432325677961" duration="272000" />
       <workItem from="1432327297527" duration="12109000" />
       <workItem from="1432392614924" duration="2111000" />
-      <workItem from="1432415404657" duration="3881000" />
+      <workItem from="1432415404657" duration="5669000" />
     </task>
     <task id="LOCAL-00001" summary="Added project file">
       <created>1431960277927</created>
@@ -952,15 +951,21 @@
       <option name="project" value="LOCAL" />
       <updated>1432418157678</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="Client also can ask for server's public key upon connection">
+      <created>1432419304866</created>
+      <option name="number" value="00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1432419304866</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="80223000" />
+    <option name="totallyTimeSpent" value="82011000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="65" y="24" width="1855" height="1056" extended-state="6" />
-    <editor active="false" />
+    <editor active="true" />
     <layout>
       <window_info id="Palette&#9;" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -979,7 +984,7 @@
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.19624102" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.39583334" sideWeight="0.49806523" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.39583334" sideWeight="0.49806523" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32916668" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -1044,7 +1049,8 @@
     <MESSAGE value="Irrelevant changes. Still no communication in simmetric key" />
     <MESSAGE value="Added a fixme" />
     <MESSAGE value="Validating client and server certificates" />
-    <option name="LAST_COMMIT_MESSAGE" value="Validating client and server certificates" />
+    <MESSAGE value="Client also can ask for server's public key upon connection" />
+    <option name="LAST_COMMIT_MESSAGE" value="Client also can ask for server's public key upon connection" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1393,15 +1399,15 @@
     <entry file="file://$PROJECT_DIR$/src/main/java/server/ServerThread.java">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
-          <caret line="19" column="54" selection-start-line="19" selection-start-column="54" selection-end-line="19" selection-end-column="54" />
+          <caret line="52" column="75" selection-start-line="52" selection-start-column="75" selection-end-line="52" selection-end-column="75" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/client/Client.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.6727273">
-          <caret line="316" column="77" selection-start-line="316" selection-start-column="77" selection-end-line="316" selection-end-column="77" />
+        <state vertical-scroll-proportion="0.7709091">
+          <caret line="341" column="39" selection-start-line="341" selection-start-column="39" selection-end-line="341" selection-end-column="39" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
