@@ -22,12 +22,6 @@ public class ClientThread extends Thread{
             if (!result)
                 this.interrupt();
 
-            //Here the key exchange should occur
-            System.out.println("Going to receive second message");
-            message = client.readMessage();
-            System.out.println("[2]Received " + message);
-            if (message == null)
-                this.interrupt();
             System.out.println("AJAAJJA");
         }
     }

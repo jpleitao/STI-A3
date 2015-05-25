@@ -16,7 +16,7 @@ public class ServerThread extends Thread{
     public ServerThread(Server server, Socket clientSocket) {
         this.server = server;
         this.clientSocket = clientSocket;
-        MAX_COMMUNICATIONS = 2;
+        MAX_COMMUNICATIONS = 1;
         currentNumberCommunications = 0;
     }
 
@@ -63,6 +63,7 @@ public class ServerThread extends Thread{
                 this.interrupt();
             }
             System.out.println("KSKSKSK");
+            this.interrupt();
         }
     }
 
@@ -74,6 +75,7 @@ public class ServerThread extends Thread{
             streams = server.sendNewKey(streams, clientSocket);
             if (streams == null)
                 return false;
+            currentNumberCommunications = 0;
         }
         return true;
     }
@@ -89,6 +91,7 @@ public class ServerThread extends Thread{
                 streams = server.sendNewKey(streams, clientSocket);
                 if (streams == null)
                     return null;
+                currentNumberCommunications = 0;
             }
         }
         return message;
