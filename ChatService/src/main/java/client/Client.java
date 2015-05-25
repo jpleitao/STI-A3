@@ -287,7 +287,7 @@ public class Client extends CAClient{
     }
 
     private void startClientThread() {
-        clientThread = new ClientThread(socket, this);
+        clientThread = new ClientThread(this);
 
         clientThread.start();
     }

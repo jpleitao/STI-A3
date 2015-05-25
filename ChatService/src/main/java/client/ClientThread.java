@@ -10,9 +10,9 @@ public class ClientThread extends Thread{
 
     public void run() {
         while (!this.isInterrupted()) {
-            System.out.println("Estou ligado!!!");
+            System.out.println("Connected!!!");
             String message = client.readMessage();
-            System.out.println("Recebi " + message);
+            System.out.println("Received " + message);
         }
     }
 }
