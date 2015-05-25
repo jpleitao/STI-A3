@@ -100,14 +100,18 @@ public class Server extends CAClient{
 
     private boolean exportPrivateKeyToFile(String filePath) {
         try {
+
+            /*
             //FIXME: See how to encrypt this!!
             //initCipher(Cipher.ENCRYPT_MODE, publicKey, serverKeyAlgorithm);
             //CipherOutputStream cipherOutputStream = new CipherOutputStream(new FileOutputStream(filePath), cipher);
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(filePath));
             objectOutputStream.writeObject(privateKey);
             objectOutputStream.close();
+            */
             return true;
-        } catch(IOException /*| NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException | InvalidKeyException*/ e) {
+        } catch(IOException | NoSuchPaddingException| NoSuchAlgorithmException | InvalidKeyException |
+                BadPaddingException | IllegalBlockSizeException e) {
             e.getMessage();
             e.printStackTrace();
             return false;
@@ -151,14 +155,18 @@ public class Server extends CAClient{
 
     private boolean loadPrivateKeyFromFile() {
         try {
+
+            /*
             //FIXME: See how to decrypt this!!
             //initCipher(Cipher.DECRYPT_MODE, privateKey, serverKeyAlgorithm);
             //CipherInputStream cipherInputStream = new CipherInputStream(new FileInputStream(privateKeyFilePath), cipher);
             ObjectInputStream ois = new ObjectInputStream(new FileInputStream(privateKeyFilePath));
             privateKey = (PrivateKey) ois.readObject();
             ois.close();
+            */
             return true;
-        }catch (ClassNotFoundException | IOException /*| NoSuchAlgorithmException | NoSuchProviderException | NoSuchPaddingException | InvalidKeyException */ e) {
+        }catch (ClassNotFoundException | IOException | NoSuchAlgorithmException | NoSuchPaddingException |
+                InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
             e.getMessage();
             e.printStackTrace();
             return false;
