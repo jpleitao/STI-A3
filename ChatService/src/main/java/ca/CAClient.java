@@ -39,7 +39,7 @@ public abstract class CAClient {
     }
 
     private void saveCertificateToFile(X509Certificate certificate, String clientName) throws IOException {
-        ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(clientName));
+        ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(clientName + "-Certificate.cer"));
         oos.writeObject(certificate);
         oos.close();
     }

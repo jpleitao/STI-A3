@@ -383,7 +383,7 @@ public class Client extends CAClient{
         }
 
         if (!client.loadClientCertificate()) {
-            if (!client.requestCertificate(client.name + "-Certificate.cer")) {
+            if (!client.requestCertificate(client.name)) {
                 System.out.println("Could not connect with CA!");
                 System.exit(1);
             }
