@@ -2,6 +2,7 @@ package server;
 
 import ca.CAClient;
 import common.PackageBundleObject;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import javax.crypto.*;
 import javax.crypto.spec.DESKeySpec;
@@ -254,8 +255,16 @@ public class Server extends CAClient{
 
     private String readMessage(ObjectInputStream stream) {
         try {
-            //FIXME: Change this!
-            return (String) stream.readObject();
+            PackageBundleObject received = (PackageBundleObject) stream.readObject();
+
+            //Get message and compute its hash
+            String messageHash = DigestUtils.sha1Hex(received.message);
+            if (!messageHash.equals(received.messageHash)) {
+                System.out.println("Message has been tampered!");
+                return null;
+            }
+
+            return received.message;
         } catch (IOException | ClassNotFoundException e){
             e.getMessage();
             e.printStackTrace();
