@@ -147,12 +147,50 @@ public class Server extends CAClient{
         }
     }
 
-    public SecretKey generateSessionKey(){
+    private SecretKey generateSessionKey(){
         try {
-            KeyGenerator keyGen = KeyGenerator.getInstance(sessionKeyAlgorithm);
+            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
             keyGen.init(SESSIONKEYSIZE);
             return keyGen.generateKey();
         } catch (NoSuchAlgorithmException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public ObjectStreamBundle sendNewKey(ObjectStreamBundle streams, Socket socket) {
+        SecretKey newSessionKey = generateSessionKey();
+
+        try {
+            //Send the new session key
+            PackageBundleObject packageBundleObject = new PackageBundleObject(null, newSessionKey);
+            streams.outputStream.writeObject(packageBundleObject);
+            streams.outputStream.flush();
+
+            //Send initial iv
+            Cipher outputCipher = initCipher(Cipher.ENCRYPT_MODE, newSessionKey, sessionKeyAlgorithm, null);
+            if (outputCipher == null)
+                return null;
+            streams.outputStream.writeObject(outputCipher.getIV());
+            streams.outputStream.flush();
+
+            //Receive initial iv
+            byte [] inputIV = (byte[])streams.inputStream.readObject();
+            Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, newSessionKey, sessionKeyAlgorithm, inputIV);
+
+
+            //Creating the real communications stream
+            CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
+            ObjectOutputStream outputStream = new ObjectOutputStream(cipherOutputStream);
+            outputStream.flush();
+            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), inputCipher);
+            ObjectInputStream inputStream = new ObjectInputStream(cipherInputStream);
+
+            return new ObjectStreamBundle(inputStream, outputStream);
+
+        } catch (IOException | NoSuchAlgorithmException | ClassNotFoundException | InvalidKeyException |
+                NoSuchPaddingException | NoSuchProviderException e) {
             e.getMessage();
             e.printStackTrace();
             return null;
@@ -253,7 +291,7 @@ public class Server extends CAClient{
         return  out;
     }
 
-    private String readMessage(ObjectInputStream stream) {
+    public String readMessage(ObjectInputStream stream) {
         try {
             PackageBundleObject received = (PackageBundleObject) stream.readObject();
 

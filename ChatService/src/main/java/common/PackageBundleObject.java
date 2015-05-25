@@ -14,7 +14,10 @@ public class PackageBundleObject implements Serializable{
     public PackageBundleObject(String message, SecretKey newSessionKey) {
         this.message = message;
         this.newSessionKey = newSessionKey;
-        this.messageHash = DigestUtils.sha1Hex(message);
+        if (message != null)
+            this.messageHash = DigestUtils.sha1Hex(message);
+        else
+            this.messageHash = null;
         if (newSessionKey != null)
             this.newSessionKeyHash = DigestUtils.sha1Hex(newSessionKey.getEncoded());
         else

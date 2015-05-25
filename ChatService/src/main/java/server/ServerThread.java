@@ -1,9 +1,14 @@
 package server;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 public class ServerThread extends Thread{
 
+    private final int MAX_COMMUNICATIONS;
+
+    private int currentNumberCommunications;
     private Server server;
     private Socket clientSocket;
     private Server.ObjectStreamBundle streams;
@@ -11,6 +16,8 @@ public class ServerThread extends Thread{
     public ServerThread(Server server, Socket clientSocket) {
         this.server = server;
         this.clientSocket = clientSocket;
+        MAX_COMMUNICATIONS = 2;
+        currentNumberCommunications = 0;
     }
 
     public void run() {
@@ -45,12 +52,47 @@ public class ServerThread extends Thread{
         while (!this.isInterrupted()) {
             //Try sending a string to the client with the received sessionKey
             String message = "Hello from Server";
-            boolean result = server.sendMessage(message, streams.outputStream);
-            System.out.println("Sent message and the result was " + result);
+            boolean result = sendMessage(message, streams.outputStream);
+            System.out.println("[1]Sent message and the result was " + result);
             if (!result)
                 this.interrupt();
+
+            String received = readMessage(streams.inputStream);
+            System.out.println("[1]Received message " + received);
+            if (received == null) {
+                this.interrupt();
+            }
+            System.out.println("KSKSKSK");
         }
-        //FIXME: SEE FACEBOOK QUESTION REGARDING ENCRYPTION AND SIGNATURES
     }
+
+    private boolean sendMessage(String message, ObjectOutputStream outputStream) {
+        if(!server.sendMessage(message, outputStream))
+            return false;
+        currentNumberCommunications++;
+        if(currentNumberCommunications == MAX_COMMUNICATIONS) {
+            streams = server.sendNewKey(streams, clientSocket);
+            if (streams == null)
+                return false;
+        }
+        return true;
+    }
+
+    private String readMessage(ObjectInputStream inputStream) {
+        //Check if we need to change the session key
+        String message = server.readMessage(inputStream);
+
+        if (message != null) {
+            currentNumberCommunications++;
+            if(currentNumberCommunications == MAX_COMMUNICATIONS) {
+                System.out.println("Going to send new session key");
+                streams = server.sendNewKey(streams, clientSocket);
+                if (streams == null)
+                    return null;
+            }
+        }
+        return message;
+    }
+
 
 }

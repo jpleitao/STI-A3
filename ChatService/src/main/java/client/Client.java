@@ -241,11 +241,11 @@ public class Client extends CAClient{
             outputStream.flush();
 
             //Create new Input and Output Stream
-            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), inputCipher);
-            inputStream = new ObjectInputStream(cipherInputStream);
             CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
             outputStream = new ObjectOutputStream(cipherOutputStream);
             outputStream.flush();
+            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), inputCipher);
+            inputStream = new ObjectInputStream(cipherInputStream);
             return true;
         } catch (IOException | NoSuchAlgorithmException | NoSuchPaddingException | NoSuchProviderException |
                 ClassNotFoundException | InvalidKeyException e) {
@@ -273,22 +273,29 @@ public class Client extends CAClient{
         try {
             PackageBundleObject received = (PackageBundleObject) inputStream.readObject();
 
+            System.out.println("RECEBI " + received.message + " " + received.newSessionKey);
+
             //Get message and compute its hash
-            String messageHash = DigestUtils.sha1Hex(received.message);
-            if (!messageHash.equals(received.messageHash)) {
-                System.out.println("Message has been tampered!");
-                return null;
-            }
-            //Check if we have session key
-            if (received.newSessionKey != null) {
-                System.out.println("Got new Session Key!");
-                //Confirm the hash and updates the input and output streams
-                if(!checkHash(received.newSessionKey, received.newSessionKeyHash)) {
-                    System.out.println("New Session Key has been tampered");
+            if (received.message != null) {
+                String messageHash = DigestUtils.sha1Hex(received.message);
+                if (!messageHash.equals(received.messageHash)) {
+                    System.out.println("Message has been tampered!");
+                    return null;
                 }
+                return received.message;
             }
 
-            return received.message;
+            //Check if we have session key
+            else if (received.newSessionKey != null) {
+                System.out.println("Got new Session Key!");
+                //Confirm the hash and updates the input and output streams
+                if (!checkHash(received.newSessionKey, received.newSessionKeyHash)) {
+                    System.out.println("New Session Key has been tampered");
+                    return null;
+                }
+                return "";
+            }
+            return null;
         } catch (IOException|ClassNotFoundException e){
             e.getMessage();
             e.printStackTrace();
@@ -326,11 +333,11 @@ public class Client extends CAClient{
             Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, sessionKey, sessionKeyAlgorithm, inputIV);
 
             //Creating the real communications stream
-            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), inputCipher);
-            inputStream = new ObjectInputStream(cipherInputStream);
             CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
             outputStream = new ObjectOutputStream(cipherOutputStream);
             outputStream.flush();
+            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), inputCipher);
+            inputStream = new ObjectInputStream(cipherInputStream);
 
             return true;
         } catch (IllegalBlockSizeException | BadPaddingException | IOException | InvalidKeyException | NoSuchPaddingException
