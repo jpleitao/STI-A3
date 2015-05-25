@@ -490,7 +490,7 @@ public class Server extends CAClient{
         }
 
         if (!server.loadCertificate()) {
-            if (!server.requestCertificate("certificateFilePath")) {
+            if (!server.requestCertificate(server.certificateFilePath)) {
                 System.out.println("Could not connect with CA!");
                 System.exit(-1);
             }
