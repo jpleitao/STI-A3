@@ -1,15 +1,10 @@
 package client;
 
-
-import java.net.Socket;
-
 public class ClientThread extends Thread{
 
-    private Socket socket;
     private Client client;
 
-    public ClientThread(Socket socket, Client client) {
-        this.socket = socket;
+    public ClientThread(Client client) {
         this.client = client;
     }
 
