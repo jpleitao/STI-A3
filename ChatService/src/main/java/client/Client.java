@@ -3,7 +3,6 @@ package client;
 import ca.CAClient;
 import common.PackageBundleObject;
 import org.apache.commons.codec.digest.DigestUtils;
-
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.*;
@@ -192,16 +191,21 @@ public class Client extends CAClient{
             params.setRevocationEnabled(false);
 
             CertPathValidator cpv = CertPathValidator.getInstance("PKIX");
-            PKIXCertPathValidatorResult pkixCertPathValidatorResult = (PKIXCertPathValidatorResult) cpv.validate(cp, params);
+            PKIXCertPathValidatorResult pkixCertPathValidatorResult =
+                    (PKIXCertPathValidatorResult)cpv.validate(cp,params);
 
             return pkixCertPathValidatorResult != null;
-        } catch (NoSuchAlgorithmException | CertificateException | InvalidAlgorithmParameterException | CertPathValidatorException e) {
+        } catch (NoSuchAlgorithmException | CertificateException | InvalidAlgorithmParameterException |
+                CertPathValidatorException e) {
             e.getMessage();
             e.printStackTrace();
             return false;
         }
     }
-    private Cipher initCipher(int mode, Key key, String method, byte[] iv) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException {
+    private Cipher initCipher(int mode, Key key, String method, byte[] iv) throws InvalidKeyException,
+                                                                                  NoSuchPaddingException,
+                                                                                  NoSuchAlgorithmException,
+                                                                                  NoSuchProviderException {
         Cipher out;
         if (mode == Cipher.ENCRYPT_MODE) {
              out = Cipher.getInstance(method, "BC");
@@ -340,8 +344,8 @@ public class Client extends CAClient{
             inputStream = new ObjectInputStream(cipherInputStream);
 
             return true;
-        } catch (IllegalBlockSizeException | BadPaddingException | IOException | InvalidKeyException | NoSuchPaddingException
-                | NoSuchProviderException |NoSuchAlgorithmException | ClassNotFoundException e){
+        } catch (IllegalBlockSizeException | BadPaddingException | IOException | InvalidKeyException |
+                 NoSuchPaddingException | NoSuchProviderException |NoSuchAlgorithmException | ClassNotFoundException e){
             e.getMessage();
             e.printStackTrace();
             return false;
@@ -407,11 +411,8 @@ public class Client extends CAClient{
                 System.out.println("Could not send certificate to server");
                 System.exit(-1);
             }
-
             //Create Client Thread
             client.startClientThread();
-
-            //FIXME: SEE FACEBOOK QUESTION REGARDING ENCRYPTION AND SIGNATURES
         }
     }
 }

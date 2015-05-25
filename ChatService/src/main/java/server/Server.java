@@ -3,9 +3,7 @@ package server;
 import ca.CAClient;
 import common.PackageBundleObject;
 import org.apache.commons.codec.digest.DigestUtils;
-
 import javax.crypto.*;
-import javax.crypto.spec.DESKeySpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
@@ -13,7 +11,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.*;
-import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -122,7 +119,8 @@ public class Server extends CAClient{
             cipherPrivate.init(Cipher.ENCRYPT_MODE, key);
 
             //Actually encrypt the content in the file
-            CipherOutputStream cipherOutputStream = new CipherOutputStream(new FileOutputStream(filePath), cipherPrivate);
+            CipherOutputStream cipherOutputStream = new CipherOutputStream(new FileOutputStream(filePath),
+                                                                           cipherPrivate);
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(cipherOutputStream);
             objectOutputStream.writeObject(privateKey);
             objectOutputStream.close();
@@ -223,7 +221,8 @@ public class Server extends CAClient{
             cipherPrivate.init(Cipher.DECRYPT_MODE, key);
 
             //Actually decrypt the content in the file
-            CipherInputStream cipherInputStream = new CipherInputStream(new FileInputStream(privateKeyFilePath), cipherPrivate);
+            CipherInputStream cipherInputStream = new CipherInputStream(new FileInputStream(privateKeyFilePath),
+                                                                        cipherPrivate);
             ObjectInput objectInputStream = new ObjectInputStream(cipherInputStream);
             privateKey = (PrivateKey) objectInputStream.readObject();
             objectInputStream.close();
@@ -264,7 +263,10 @@ public class Server extends CAClient{
         }
     }
 
-    private Cipher initCipher(int mode, Key key, String method, byte[] iv) throws InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException {
+    private Cipher initCipher(int mode, Key key, String method, byte[] iv) throws InvalidKeyException,
+                                                                                  NoSuchPaddingException,
+                                                                                  NoSuchAlgorithmException,
+                                                                                  NoSuchProviderException {
         Cipher out;
         if (mode == Cipher.ENCRYPT_MODE) {
             out = Cipher.getInstance(method, "BC");
@@ -436,10 +438,12 @@ public class Server extends CAClient{
             params.setRevocationEnabled(false);
 
             CertPathValidator cpv = CertPathValidator.getInstance("PKIX");
-            PKIXCertPathValidatorResult pkixCertPathValidatorResult = (PKIXCertPathValidatorResult) cpv.validate(cp, params);
+            PKIXCertPathValidatorResult pkixCertPathValidatorResult =
+                    (PKIXCertPathValidatorResult) cpv.validate(cp, params);
 
             return pkixCertPathValidatorResult != null;
-        } catch (NoSuchAlgorithmException | CertificateException | InvalidAlgorithmParameterException | CertPathValidatorException e) {
+        } catch (NoSuchAlgorithmException | CertificateException | InvalidAlgorithmParameterException |
+                 CertPathValidatorException e) {
             e.getMessage();
             e.printStackTrace();
             return false;
