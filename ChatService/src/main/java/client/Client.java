@@ -1,6 +1,8 @@
 package client;
 
 import ca.CAClient;
+import common.PackageBundleObject;
+import org.apache.commons.codec.digest.DigestUtils;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -219,9 +221,45 @@ public class Client extends CAClient{
         return out;
     }
 
+    private boolean checkHash(SecretKey newSessionKey, String newSessionKeyHash) {
+
+        //Confirm the hash
+        String hash = DigestUtils.sha1Hex(newSessionKey.getEncoded());
+        if (!hash.equals(newSessionKeyHash))
+            return false;
+
+        try{
+            //Receiving the initial IV for the input cypher
+            byte [] inputIV = (byte[])inputStream.readObject();
+            Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, newSessionKey, sessionKeyAlgorithm, inputIV);
+
+            //Sending the initial IV of the output cipher
+            Cipher outputCipher = initCipher(Cipher.ENCRYPT_MODE, newSessionKey, sessionKeyAlgorithm, null);
+            if (outputCipher == null)
+                return false;
+            outputStream.writeObject(outputCipher.getIV());
+            outputStream.flush();
+
+            //Create new Input and Output Stream
+            CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), inputCipher);
+            inputStream = new ObjectInputStream(cipherInputStream);
+            CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
+            outputStream = new ObjectOutputStream(cipherOutputStream);
+            outputStream.flush();
+            return true;
+        } catch (IOException | NoSuchAlgorithmException | NoSuchPaddingException | NoSuchProviderException |
+                ClassNotFoundException | InvalidKeyException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+
     public boolean sendMessage(String message) {
         try{
-            outputStream.writeObject(message);
+            PackageBundleObject packageBundleObject = new PackageBundleObject(message, null);
+            outputStream.writeObject(packageBundleObject);
             outputStream.flush();
             return true;
         } catch (IOException e) {
@@ -233,7 +271,24 @@ public class Client extends CAClient{
 
     public String readMessage() {
         try {
-            return (String) inputStream.readObject();
+            PackageBundleObject received = (PackageBundleObject) inputStream.readObject();
+
+            //Get message and compute its hash
+            String messageHash = DigestUtils.sha1Hex(received.message);
+            if (!messageHash.equals(received.messageHash)) {
+                System.out.println("Message has been tampered!");
+                return null;
+            }
+            //Check if we have session key
+            if (received.newSessionKey != null) {
+                System.out.println("Got new Session Key!");
+                //Confirm the hash and updates the input and output streams
+                if(!checkHash(received.newSessionKey, received.newSessionKeyHash)) {
+                    System.out.println("New Session Key has been tampered");
+                }
+            }
+
+            return received.message;
         } catch (IOException|ClassNotFoundException e){
             e.getMessage();
             e.printStackTrace();

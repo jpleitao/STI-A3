@@ -13,6 +13,7 @@ public class ClientThread extends Thread{
             System.out.println("Connected!!!");
             String message = client.readMessage();
             System.out.println("Received " + message);
+            this.interrupt();
         }
     }
 }

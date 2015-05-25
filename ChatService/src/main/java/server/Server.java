@@ -1,6 +1,7 @@
 package server;
 
 import ca.CAClient;
+import common.PackageBundleObject;
 
 import javax.crypto.*;
 import javax.crypto.spec.DESKeySpec;
@@ -253,8 +254,9 @@ public class Server extends CAClient{
 
     private String readMessage(ObjectInputStream stream) {
         try {
+            //FIXME: Change this!
             return (String) stream.readObject();
-        } catch (IOException|ClassNotFoundException e){
+        } catch (IOException | ClassNotFoundException e){
             e.getMessage();
             e.printStackTrace();
             return null;
@@ -263,7 +265,22 @@ public class Server extends CAClient{
 
     public boolean sendMessage(String message, ObjectOutputStream stream) {
         try{
-            stream.writeObject(message);
+            //Message hash and check if we need to change the key
+            PackageBundleObject packageBundleObject = new PackageBundleObject(message, null);
+            stream.writeObject(packageBundleObject);
+            stream.flush();
+            return true;
+        } catch (IOException e) {
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean sendMessage(String message, ObjectOutputStream stream, SecretKey sessionKey) {
+        try{
+            PackageBundleObject packageBundleObject = new PackageBundleObject(message, sessionKey);
+            stream.writeObject(packageBundleObject);
             stream.flush();
             return true;
         } catch (IOException e) {
@@ -299,6 +316,8 @@ public class Server extends CAClient{
         try{
             //Use private key to decrypt session key
             Cipher rsaCipher = initCipher(Cipher.DECRYPT_MODE, privateKey, serverKeyAlgorithm, null);
+            if (rsaCipher == null)
+                return null;
             ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
             byte [] encryptedSessionKey = (byte[])objectInputStream.readObject();
 
@@ -312,6 +331,8 @@ public class Server extends CAClient{
             //Sending the initial IV of the output cipher
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             Cipher outputCipher = initCipher(Cipher.ENCRYPT_MODE, sessionKey, sessionKeyAlgorithm, null);
+            if (outputCipher == null)
+                return null;
             objectOutputStream.writeObject(outputCipher.getIV());
             objectOutputStream.flush();
 
@@ -434,7 +455,7 @@ public class Server extends CAClient{
 
     }
 
-    public class ObjectStreamBundle{
+    public class ObjectStreamBundle {
         public ObjectOutputStream outputStream;
         public ObjectInputStream inputStream;
 
