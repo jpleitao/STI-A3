@@ -3,6 +3,7 @@ package server;
 import ca.CAClient;
 
 import javax.crypto.*;
+import javax.crypto.spec.DESKeySpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
@@ -10,7 +11,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.*;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,6 +27,7 @@ public class Server extends CAClient{
     private final String serverKeyAlgorithm;
     private final String certificateType;
     private final String certificateFilePath;
+    private final String fileEncryptionKey;
 
     private SecureRandom secureRandom;
     private PrivateKey privateKey;
@@ -44,6 +48,7 @@ public class Server extends CAClient{
         certificateFilePath = "Server-Certificate.cer";
         sessionKeyAlgorithm = "AES/CFB8/NoPadding"; //CFB8 sends data in blocks of 8 bits = 1 byte
         serverKeyAlgorithm = "RSA/None/PKCS1Padding";
+        fileEncryptionKey = "STI-ChatServer";
         certificateType = "X.509";
         certificateFactory = null;
         caCertificate = null;
@@ -100,18 +105,28 @@ public class Server extends CAClient{
 
     private boolean exportPrivateKeyToFile(String filePath) {
         try {
+            //Get encryption key based on text
+            byte[] input = privateKey.getEncoded();
+            System.out.println("Key len=" + input.length);
+            byte[] fileEncryptionKeyBytes = fileEncryptionKey.getBytes("UTF-8");
 
-            /*
-            //FIXME: See how to encrypt this!!
-            //initCipher(Cipher.ENCRYPT_MODE, publicKey, serverKeyAlgorithm);
-            //CipherOutputStream cipherOutputStream = new CipherOutputStream(new FileOutputStream(filePath), cipher);
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(new FileOutputStream(filePath));
+            //Get 128 bit private encryption key from the given string
+            MessageDigest sha = MessageDigest.getInstance("SHA-1");
+            fileEncryptionKeyBytes = sha.digest(fileEncryptionKeyBytes);
+            fileEncryptionKeyBytes = Arrays.copyOf(fileEncryptionKeyBytes, 16); // use only first 128 bit
+
+            SecretKeySpec key = new SecretKeySpec(fileEncryptionKeyBytes, "AES");
+            Cipher cipherPrivate = Cipher.getInstance("AES/ECB/PKCS7Padding", "BC");
+            cipherPrivate.init(Cipher.ENCRYPT_MODE, key);
+
+            //Actually encrypt the content in the file
+            CipherOutputStream cipherOutputStream = new CipherOutputStream(new FileOutputStream(filePath), cipherPrivate);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(cipherOutputStream);
             objectOutputStream.writeObject(privateKey);
             objectOutputStream.close();
-            */
             return true;
         } catch(IOException | NoSuchPaddingException| NoSuchAlgorithmException | InvalidKeyException |
-                BadPaddingException | IllegalBlockSizeException e) {
+                NoSuchProviderException e) {
             e.getMessage();
             e.printStackTrace();
             return false;
@@ -155,18 +170,26 @@ public class Server extends CAClient{
 
     private boolean loadPrivateKeyFromFile() {
         try {
+            //Get decryption key based on text
+            byte[] fileEncryptionKeyBytes = fileEncryptionKey.getBytes("UTF-8");
 
-            /*
-            //FIXME: See how to decrypt this!!
-            //initCipher(Cipher.DECRYPT_MODE, privateKey, serverKeyAlgorithm);
-            //CipherInputStream cipherInputStream = new CipherInputStream(new FileInputStream(privateKeyFilePath), cipher);
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(privateKeyFilePath));
-            privateKey = (PrivateKey) ois.readObject();
-            ois.close();
-            */
+            //Get 128 bit private encryption key from the given string
+            MessageDigest sha = MessageDigest.getInstance("SHA-1");
+            fileEncryptionKeyBytes = sha.digest(fileEncryptionKeyBytes);
+            fileEncryptionKeyBytes = Arrays.copyOf(fileEncryptionKeyBytes, 16); // use only first 128 bits
+
+            SecretKeySpec key = new SecretKeySpec(fileEncryptionKeyBytes, "AES");
+            Cipher cipherPrivate = Cipher.getInstance("AES/ECB/PKCS7Padding", "BC");
+            cipherPrivate.init(Cipher.DECRYPT_MODE, key);
+
+            //Actually decrypt the content in the file
+            CipherInputStream cipherInputStream = new CipherInputStream(new FileInputStream(privateKeyFilePath), cipherPrivate);
+            ObjectInput objectInputStream = new ObjectInputStream(cipherInputStream);
+            privateKey = (PrivateKey) objectInputStream.readObject();
+            objectInputStream.close();
             return true;
-        }catch (ClassNotFoundException | IOException | NoSuchAlgorithmException | NoSuchPaddingException |
-                InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+        }catch (IOException | NoSuchPaddingException| NoSuchAlgorithmException | InvalidKeyException |
+                NoSuchProviderException | ClassNotFoundException e) {
             e.getMessage();
             e.printStackTrace();
             return false;
