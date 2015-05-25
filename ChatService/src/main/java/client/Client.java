@@ -33,6 +33,7 @@ public class Client extends CAClient{
     private X509Certificate caCertificate;
     private String name;
     private CertificateFactory certificateFactory;
+    private ClientThread clientThread;
 
     public Client(String name) {
         portNumber = 9996;
@@ -51,6 +52,7 @@ public class Client extends CAClient{
         certificateType = "X.509";
         caCertificate = null;
         caCertificateFilePath = "CA-Certificate.ser";
+        clientThread = null;
     }
 
     private boolean connectToServer(boolean requestServerPublicKey) {
@@ -229,7 +231,7 @@ public class Client extends CAClient{
         }
     }
 
-    private String readMessage() {
+    public String readMessage() {
         try {
             return (String) inputStream.readObject();
         } catch (IOException|ClassNotFoundException e){
@@ -247,6 +249,8 @@ public class Client extends CAClient{
         try{
             //Encrypt with the server's public key
             Cipher rsaCipher = initCipher(Cipher.ENCRYPT_MODE, serverPublicKey, serverEncryptionAlgorithm, null);
+            if (rsaCipher == null)
+                return false;
             byte [] sessionKeyEncripted = rsaCipher.doFinal(sessionKey.getEncoded());
 
             //Sending the session key encrypted
@@ -256,6 +260,8 @@ public class Client extends CAClient{
 
             //Sending the initial IV of the output cipher
             Cipher outputCipher = initCipher(Cipher.ENCRYPT_MODE, sessionKey, sessionKeyAlgorithm, null);
+            if (outputCipher == null)
+                return false;
             objectOutputStream.writeObject(outputCipher.getIV());
             objectOutputStream.flush();
 
@@ -278,6 +284,12 @@ public class Client extends CAClient{
             e.printStackTrace();
             return false;
         }
+    }
+
+    private void startClientThread() {
+        clientThread = new ClientThread(socket, this);
+
+        clientThread.start();
     }
 
     public static void main(String[] args) {
@@ -305,7 +317,11 @@ public class Client extends CAClient{
         }
 
         if (!client.loadClientCertificate()) {
-            if(!client.requestCertificate(client.name)) {
+            if (!client.requestCertificate(client.name)) {
+                System.out.println("Could not connect with CA!");
+                System.exit(1);
+            }
+            if (!client.requestCertificate(client.caCertificateFilePath)) {
                 System.out.println("Could not connect with CA!");
                 System.exit(1);
             }
@@ -330,9 +346,8 @@ public class Client extends CAClient{
                 System.exit(-1);
             }
 
-            System.out.println("Estou ligado!!!");
-            String message = client.readMessage();
-            System.out.println("Recebi " + message);
+            //Create Client Thread
+            client.startClientThread();
 
             //FIXME: SEE FACEBOOK QUESTION REGARDING ENCRYPTION AND SIGNATURES
         }

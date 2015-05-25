@@ -14,7 +14,6 @@ public class ServerThread extends Thread{
     }
 
     public void run() {
-        //FIXME: Meter isto num ciclo infinito ou assim a fazer os passos todos
 
         System.out.println("Going to see if I need to send my public key to the client");
         if (!server.sendPublicKeyToClient(clientSocket)) {
@@ -43,13 +42,14 @@ public class ServerThread extends Thread{
         }
 
         //Now we are ready to actually start exchanging messages!!!
-
-
-        //Try sending a string to the client with the received sessionKey
-        String message = "Hello from Server";
-        boolean result = server.sendMessage(message, streams.outputStream);
-        System.out.println("Sent message and the result was " + result);
-
+        while (!this.isInterrupted()) {
+            //Try sending a string to the client with the received sessionKey
+            String message = "Hello from Server";
+            boolean result = server.sendMessage(message, streams.outputStream);
+            System.out.println("Sent message and the result was " + result);
+            if (!result)
+                this.interrupt();
+        }
         //FIXME: SEE FACEBOOK QUESTION REGARDING ENCRYPTION AND SIGNATURES
     }
 
