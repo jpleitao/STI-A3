@@ -286,10 +286,15 @@ public class Client{
             outputStream.flush();
 
             //Receive the feedback
-            boolean result = inputStream.readBoolean();
-            System.out.println("Got authentication result: " + result);
-            return result;
-        } catch(IOException e) {
+            PackageBundleObject result = (PackageBundleObject) inputStream.readObject();
+            //Check hash
+            if (result == null || result.message == null || result.messageHash == null || !result.messageHash.equals(DigestUtils.sha1Hex(result.message))) {
+                System.out.println("Invalid confirmation message hash!");
+                return false;
+            }
+            System.out.println("Got authentication result: " + result.message);
+            return result.message.equals("OK");
+        } catch(IOException | ClassNotFoundException e) {
             e.getMessage();
             e.printStackTrace();
             return false;

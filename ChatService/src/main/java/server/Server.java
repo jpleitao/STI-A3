@@ -258,12 +258,29 @@ public class Server {
         try {
             //Read user information
             ConnectionRequestObject connectionRequestObject = (ConnectionRequestObject) streams.inputStream.readObject();
+
+            //Check username and password hash
+            if (connectionRequestObject == null) {
+                System.out.println("Invalid object!");
+                return false;
+            }
+            else if (connectionRequestObject.username == null || connectionRequestObject.usernameHash == null ||
+                !connectionRequestObject.usernameHash.equals(DigestUtils.sha1Hex(connectionRequestObject.username))) {
+                System.out.println("Invalid username/hash!");
+                return false;
+            } else if (connectionRequestObject.password == null || connectionRequestObject.passwordHash == null ||
+                      !connectionRequestObject.passwordHash.equals(DigestUtils.sha1Hex(connectionRequestObject.password))) {
+                System.out.println("Invalid password/hash!");
+                return false;
+            }
+
             result = lookupUser(connectionRequestObject.username, connectionRequestObject.password);
             System.out.println("User tried to login with credentials " + connectionRequestObject.username + " " +
                                 connectionRequestObject.password + " and got login result: " + result);
 
             //Send result to the user
-            streams.outputStream.writeBoolean(result);
+            PackageBundleObject packageBundleObject = new PackageBundleObject("OK", null);
+            streams.outputStream.writeObject(packageBundleObject);
             streams.outputStream.flush();
             return result;
         } catch (ClassNotFoundException | IOException e) {
