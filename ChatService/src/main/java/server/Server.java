@@ -1,6 +1,6 @@
 package server;
 
-import ca.CAClient;
+import common.ConnectionRequestObject;
 import common.PackageBundleObject;
 import org.apache.commons.codec.digest.DigestUtils;
 import javax.crypto.*;
@@ -10,13 +10,12 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
-import java.security.cert.*;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
-public class Server extends CAClient{
+public class Server {
 
     private final int portNumber;
     private final String publicKeyFilePath;
@@ -27,6 +26,7 @@ public class Server extends CAClient{
     private final String certificateType;
     private final String certificateFilePath;
     private final String fileEncryptionKey;
+    private final String userDatabaseFilePath;
 
     private SecureRandom secureRandom;
     private PrivateKey privateKey;
@@ -35,6 +35,7 @@ public class Server extends CAClient{
     private CertificateFactory certificateFactory;
     private X509Certificate caCertificate;
     private X509Certificate certificate;
+    private Database database;
 
     private static final int KEYSIZE = 512;
     private static final int SESSIONKEYSIZE = 128;
@@ -53,17 +54,8 @@ public class Server extends CAClient{
         caCertificate = null;
         certificate = null;
         secureRandom = new SecureRandom();
-    }
-
-    private boolean loadCertificateFactory() {
-        try {
-            certificateFactory = CertificateFactory.getInstance(certificateType);
-            return true;
-        } catch (CertificateException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return false;
-        }
+        userDatabaseFilePath = "users.ser";
+        database = new Database();
     }
 
     private boolean connectServer() {
@@ -75,6 +67,22 @@ public class Server extends CAClient{
             e.printStackTrace();
             return false;
         }
+    }
+
+    private boolean saveUserDatabase() {
+        return database.exportToFile(userDatabaseFilePath, fileEncryptionKey);
+    }
+
+    private boolean loadUserDatabase() {
+        return database.loadDatabase(userDatabaseFilePath, fileEncryptionKey);
+    }
+
+    private void initDatabase() {
+        database.initDatabase();
+
+        ArrayList<String[]> data = database.getUsersDatabase();
+        if (data != null)
+            System.out.println(Arrays.toString(data.get(0)));
     }
 
     private boolean generateServerKeys() {
@@ -239,28 +247,43 @@ public class Server extends CAClient{
         return loadPublicKeyFromFile() && loadPrivateKeyFromFile();
     }
 
-    private boolean loadCACertificate() {
+
+    public boolean sendPublicKeyToClient(Socket socket) {
         try {
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(caCertificateFilePath));
-            caCertificate = (X509Certificate) ois.readObject();
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+            objectOutputStream.writeObject(publicKey);
+            objectOutputStream.flush();
             return true;
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             e.getMessage();
             e.printStackTrace();
             return false;
         }
     }
 
-    private boolean loadCertificate() {
+    public boolean handleUserAuthentication(ObjectStreamBundle streams) {
+        boolean result;
+
         try {
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(certificateFilePath));
-            certificate = (X509Certificate) ois.readObject();
-            return true;
-        } catch (IOException | ClassNotFoundException e) {
+            //Read user information
+            ConnectionRequestObject connectionRequestObject = (ConnectionRequestObject) streams.inputStream.readObject();
+            result = lookupUser(connectionRequestObject.username, connectionRequestObject.password);
+            System.out.println("User tried to login with credentials " + connectionRequestObject.username + " " +
+                                connectionRequestObject.password + " and got login result: " + result);
+
+            //Send result to the user
+            streams.outputStream.writeBoolean(result);
+            streams.outputStream.flush();
+            return result;
+        } catch (ClassNotFoundException | IOException e) {
             e.getMessage();
             e.printStackTrace();
             return false;
         }
+    }
+
+    private boolean lookupUser(String username,String password) {
+        return database.lookupUser(username, password);
     }
 
     private Cipher initCipher(int mode, Key key, String method, byte[] iv) throws InvalidKeyException,
@@ -339,28 +362,6 @@ public class Server extends CAClient{
         }
     }
 
-    public boolean sendPublicKeyToClient(Socket socket) {
-        try {
-            ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-
-            //Receive boolean value
-            boolean request = objectInputStream.readBoolean();
-
-            if (request) {
-                //Send public key to client
-                objectOutputStream.writeObject(publicKey);
-                objectOutputStream.flush();
-            }
-            return true;
-        } catch(IOException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return false;
-        }
-
-    }
-
     public ObjectStreamBundle receiveSessionKey(Socket socket) {
         try{
             //Use private key to decrypt session key
@@ -372,6 +373,8 @@ public class Server extends CAClient{
 
             byte[] sessionKeyEncoded = rsaCipher.doFinal(encryptedSessionKey);
             SecretKey sessionKey =  new SecretKeySpec(sessionKeyEncoded, 0, sessionKeyEncoded.length, "AES") ;
+
+            System.out.println("Received client's session key " + sessionKey);
 
             //Receiving the initial IV for the input cypher
             byte [] inputIV = (byte[])objectInputStream.readObject();
@@ -398,55 +401,6 @@ public class Server extends CAClient{
             e.getMessage();
             e.printStackTrace();
             return null;
-        }
-    }
-
-    public boolean sendCertificateToClient(ObjectOutputStream outputStream) {
-        try {
-            System.out.println("Going to send the certificate to the client");
-            outputStream.writeObject(certificate);
-            outputStream.flush();
-            return true;
-        } catch (IOException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    public boolean receiveAndValidateServerCertificate(ObjectInputStream inputStream) {
-        try {
-            X509Certificate clientCertificate = (X509Certificate) inputStream.readObject();
-            return validateClientCertificate(clientCertificate);
-        } catch(IOException | ClassNotFoundException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return false;
-        }
-
-    }
-
-    private boolean validateClientCertificate(X509Certificate clientCertificate) {
-        try {
-            //Check the chain
-            List<X509Certificate> mylist = new ArrayList<>();
-            mylist.add(clientCertificate);
-            CertPath cp = certificateFactory.generateCertPath(mylist);
-
-            TrustAnchor anchor = new TrustAnchor(caCertificate, null);
-            PKIXParameters params = new PKIXParameters(Collections.singleton(anchor));
-            params.setRevocationEnabled(false);
-
-            CertPathValidator cpv = CertPathValidator.getInstance("PKIX");
-            PKIXCertPathValidatorResult pkixCertPathValidatorResult =
-                    (PKIXCertPathValidatorResult) cpv.validate(cp, params);
-
-            return pkixCertPathValidatorResult != null;
-        } catch (NoSuchAlgorithmException | CertificateException | InvalidAlgorithmParameterException |
-                 CertPathValidatorException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return false;
         }
     }
 
@@ -482,21 +436,14 @@ public class Server extends CAClient{
             }
         }
 
-        if (!server.loadCACertificate()) {
-            if(!server.requestCertificate(server.caCertificateFilePath)) {
-                System.out.println("Could not connect with CA!");
-                System.exit(-1);
-            }
+        //Load database
+        if (!server.loadUserDatabase()) {
+            System.out.println("Could not load user database!Using default database!");
+            server.initDatabase();
+            server.saveUserDatabase();
         }
 
-        if (!server.loadCertificate()) {
-            if (!server.requestCertificate("certificateFilePath")) {
-                System.out.println("Could not connect with CA!");
-                System.exit(-1);
-            }
-        }
-
-        if (server.connectServer() && server.loadCertificateFactory()) {
+        if (server.connectServer()) {
             server.run();
         }
         else{

@@ -22,33 +22,30 @@ public class ServerThread extends Thread{
 
     public void run() {
 
-        System.out.println("Going to see if I need to send my public key to the client");
+        //Send public key to the client
+        System.out.println("Going to send the server's public key to the client");
         if (!server.sendPublicKeyToClient(clientSocket)) {
-            System.out.println("Could not send public key to client");
-            return;
+            System.out.println("Failed to send public key to client!");
+            return ;
         }
 
+        //Receive session key
         System.out.println("Going to wait for the client's session key");
         streams = server.receiveSessionKey(clientSocket);
 
         if (streams == null) {
             System.out.println("Could not receive session key");
-            return;
+             return ;
         }
 
-        //Send server's certificate encrypted with session key
-        if (!server.sendCertificateToClient(streams.outputStream)) {
-            System.out.println("Failed to send certificate to the client");
-            return;
-        }
-
-        //Receive Client's Certificate and validate it
-        if (!server.receiveAndValidateServerCertificate(streams.inputStream)) {
-            System.out.println("Could not receive the client's certificate or invalid client certificate");
+        //Authenticate the user and send him feedback
+        if (!server.handleUserAuthentication(streams)) {
+            System.out.println("User authentication failed!");
             return ;
         }
 
         //Now we are ready to actually start exchanging messages!!!
+        //FIXME THIS PART IS BUGGY
         while (!this.isInterrupted()) {
             //Try sending a string to the client with the received sessionKey
             String message = "Hello from Server";
@@ -65,6 +62,7 @@ public class ServerThread extends Thread{
             System.out.println("KSKSKSK");
             this.interrupt();
         }
+
     }
 
     private boolean sendMessage(String message, ObjectOutputStream outputStream) {

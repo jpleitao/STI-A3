@@ -9,6 +9,7 @@ public class ClientThread extends Thread{
     }
 
     public void run() {
+        //FIXME THIS PART IS BUGGY
         while (!this.isInterrupted()) {
             System.out.println("Connected!!!");
 

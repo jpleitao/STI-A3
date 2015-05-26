@@ -1,28 +1,23 @@
 package client;
 
-import ca.CAClient;
+import common.ConnectionRequestObject;
 import common.PackageBundleObject;
 import org.apache.commons.codec.digest.DigestUtils;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.security.*;
-import java.security.cert.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
-public class Client extends CAClient{
+public class Client{
 
     private final int portNumber;
-    private final String serverPublicKeyFilePath;
     private final String serverHost;
     private final String sessionKeyAlgorithm;
     private final String serverEncryptionAlgorithm;
     private final int SESSIONKEYSIZE;
-    private final String certificateType;
-    private final String caCertificateFilePath;
 
     private SecureRandom secureRandom;
     private Key serverPublicKey;
@@ -30,48 +25,53 @@ public class Client extends CAClient{
     private Socket socket;
     private ObjectInputStream inputStream;
     private ObjectOutputStream outputStream;
-    private X509Certificate certificate;
-    private X509Certificate caCertificate;
-    private String name;
-    private CertificateFactory certificateFactory;
     private ClientThread clientThread;
+    private String username;
+    private String password;
 
-    public Client(String name) {
+    public Client(String username, String password) {
         portNumber = 9996;
         SESSIONKEYSIZE = 128;
-        serverPublicKeyFilePath = "Server-PublicKey.ser";
         serverHost = "localhost";
         sessionKeyAlgorithm = "AES/CFB8/NoPadding";
         serverEncryptionAlgorithm = "RSA/None/PKCS1Padding";
         serverPublicKey = null;
         communicationKey = null;
         socket = null;
-        certificate = null;
-        this.name = name;
         secureRandom = new SecureRandom();
-        certificateFactory = null;
-        certificateType = "X.509";
-        caCertificate = null;
-        caCertificateFilePath = "CA-Certificate.ser";
         clientThread = null;
+        this.username = username;
+        this.password = password;
     }
 
-    private boolean connectToServer(boolean requestServerPublicKey) {
+    private boolean connectToServer() {
         try {
             socket = new Socket(serverHost, portNumber);
 
-            if (!getServerPublicKey(socket, requestServerPublicKey)) {
-                System.out.println("Could not request server public key");
+            //Get server public key
+            System.out.println("Going to get the server's public key");
+            if(!getServerPublicKey()) {
+                System.out.println("Could not get server's public key");
                 return false;
             }
 
-            //Generate a session key and send it to the server
+            //Generate communication key
             communicationKey = generateSessionKey();
-            if(!sendSessionKey(communicationKey)) {
-                System.out.println("Could not send session key to the server!");
+            //Send communication key to server
+            if (!sendSessionKey()) {
+                System.out.println("Could not establish a session with the server");
                 return false;
             }
-            System.out.println("Successfully sent session key to the Server");
+
+            /* Send user credentials over secure connection
+             * Since the server is giving us a response we can assure that the server got the message and the session
+             * key, so is there any need for further server authentication? FIXME
+             */
+            if(!authenticateUser()) {
+                System.out.println("Failed to log in");
+                return false;
+            }
+
             return true;
         } catch(IOException ioexception) {
             ioexception.printStackTrace();
@@ -79,41 +79,12 @@ public class Client extends CAClient{
         }
     }
 
-    private boolean loadCertificateFactory() {
-        try {
-            certificateFactory = CertificateFactory.getInstance(certificateType);
-            return true;
-        } catch (CertificateException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    private boolean loadCACertificate() {
-        try {
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(caCertificateFilePath));
-            caCertificate = (X509Certificate) ois.readObject();
-            return true;
-        } catch (IOException | ClassNotFoundException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    private boolean getServerPublicKey(Socket socket, boolean sendRequest) {
+    private boolean getServerPublicKey() {
 
         try {
             //Send the server a boolean value to inform of the client's need to get its public key
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
-
-            objectOutputStream.writeBoolean(sendRequest);
-            objectOutputStream.flush();
-
-            if (sendRequest)
-                serverPublicKey = (Key) objectInputStream.readObject();
+            serverPublicKey = (Key) objectInputStream.readObject();
             return true;
         } catch (IOException | ClassNotFoundException e) {
             e.getMessage();
@@ -134,74 +105,6 @@ public class Client extends CAClient{
         }
     }
 
-    private boolean loadServerPublicKey() {
-        try {
-            ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(serverPublicKeyFilePath));
-            serverPublicKey = (Key) objectInputStream.readObject();
-            return true;
-        } catch(IOException | ClassNotFoundException exception) {
-            exception.printStackTrace();
-            return false;
-        }
-    }
-
-    private boolean loadClientCertificate() {
-        try{
-            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(name + "-Certificate.cer"));
-            certificate = (X509Certificate) ois.readObject();
-            return true;
-        } catch(IOException | ClassNotFoundException exception) {
-            return false;
-        }
-    }
-
-    private boolean sendCertificateToServer() {
-        try {
-            outputStream.writeObject(certificate);
-            outputStream.flush();
-            return true;
-        } catch (IOException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    private boolean receiveAndValidateServerCertificate() {
-
-        try {
-            X509Certificate serverCertificate = (X509Certificate) inputStream.readObject();
-            return validateServerCertificate(serverCertificate);
-        } catch (ClassNotFoundException | IOException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    private boolean validateServerCertificate(X509Certificate certificate) {
-        try {
-            //Check the chain
-            List<X509Certificate> mylist = new ArrayList<>();
-            mylist.add(certificate);
-            CertPath cp = certificateFactory.generateCertPath(mylist);
-
-            TrustAnchor anchor = new TrustAnchor(caCertificate, null);
-            PKIXParameters params = new PKIXParameters(Collections.singleton(anchor));
-            params.setRevocationEnabled(false);
-
-            CertPathValidator cpv = CertPathValidator.getInstance("PKIX");
-            PKIXCertPathValidatorResult pkixCertPathValidatorResult =
-                    (PKIXCertPathValidatorResult)cpv.validate(cp,params);
-
-            return pkixCertPathValidatorResult != null;
-        } catch (NoSuchAlgorithmException | CertificateException | InvalidAlgorithmParameterException |
-                CertPathValidatorException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return false;
-        }
-    }
     private Cipher initCipher(int mode, Key key, String method, byte[] iv) throws InvalidKeyException,
                                                                                   NoSuchPaddingException,
                                                                                   NoSuchAlgorithmException,
@@ -307,25 +210,22 @@ public class Client extends CAClient{
         }
     }
 
-    private boolean sendSessionKey(SecretKey sessionKey) {
-
-        if (sessionKey == null)
-            return false;
-
+    private boolean sendSessionKey() {
         try{
-            //Encrypt with the server's public key
+            //Encrypt the request with the server's public key
             Cipher rsaCipher = initCipher(Cipher.ENCRYPT_MODE, serverPublicKey, serverEncryptionAlgorithm, null);
             if (rsaCipher == null)
                 return false;
-            byte [] sessionKeyEncripted = rsaCipher.doFinal(sessionKey.getEncoded());
+            byte [] sessionKeyEncripted = rsaCipher.doFinal(communicationKey.getEncoded());
 
             //Sending the session key encrypted
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             objectOutputStream.writeObject(sessionKeyEncripted);
             objectOutputStream.flush();
+            System.out.println("Sent sessionKey encrypted with Server's public key");
 
             //Sending the initial IV of the output cipher
-            Cipher outputCipher = initCipher(Cipher.ENCRYPT_MODE, sessionKey, sessionKeyAlgorithm, null);
+            Cipher outputCipher = initCipher(Cipher.ENCRYPT_MODE, communicationKey, sessionKeyAlgorithm, null);
             if (outputCipher == null)
                 return false;
             objectOutputStream.writeObject(outputCipher.getIV());
@@ -334,7 +234,7 @@ public class Client extends CAClient{
             //Receiving the initial IV for the input cypher
             ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
             byte [] inputIV = (byte[])objectInputStream.readObject();
-            Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, sessionKey, sessionKeyAlgorithm, inputIV);
+            Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, communicationKey, sessionKeyAlgorithm, inputIV);
 
             //Creating the real communications stream
             CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
@@ -342,10 +242,28 @@ public class Client extends CAClient{
             outputStream.flush();
             CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), inputCipher);
             inputStream = new ObjectInputStream(cipherInputStream);
-
             return true;
         } catch (IllegalBlockSizeException | BadPaddingException | IOException | InvalidKeyException |
                  NoSuchPaddingException | NoSuchProviderException |NoSuchAlgorithmException | ClassNotFoundException e){
+            e.getMessage();
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private boolean authenticateUser() {
+        try{
+            //Create the object with the request
+            ConnectionRequestObject connectionRequestObject = new ConnectionRequestObject(username, password);
+            //Send the user information
+            outputStream.writeObject(connectionRequestObject);
+            outputStream.flush();
+
+            //Receive the feedback
+            boolean result = inputStream.readBoolean();
+            System.out.println("Got authentication result: " + result);
+            return result;
+        } catch(IOException e) {
             e.getMessage();
             e.printStackTrace();
             return false;
@@ -361,56 +279,16 @@ public class Client extends CAClient{
     public static void main(String[] args) {
         //Call it Magic: Add Bouncy Castle as Provider
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
-        boolean requestServerPublicKey = false;
 
         Client client;
-        if (args.length != 1)
-            client = new Client("Client");
+        if (args.length != 2)
+            client = new Client("joaquim", "1234");
         else
         //Create the client and connect it to the Chat Server
-            client = new Client(args[0]);
+            client = new Client(args[0], args[1]);
 
-        if (!client.loadCertificateFactory()) {
-            System.out.println("Could not load certificate factory");
-            System.exit(-1);
-        }
-
-        if (!client.loadCACertificate()) {
-            if(!client.requestCertificate(client.caCertificateFilePath)) {
-                System.out.println("Could not connect with CA!");
-                System.exit(-1);
-            }
-        }
-
-        if (!client.loadClientCertificate()) {
-            if (!client.requestCertificate(client.name)) {
-                System.out.println("Could not connect with CA!");
-                System.exit(1);
-            }
-            if (!client.requestCertificate(client.caCertificateFilePath)) {
-                System.out.println("Could not connect with CA!");
-                System.exit(1);
-            }
-        }
-
-        if(!client.loadServerPublicKey()){
-            //Request the server's public key after establishing the connection
-            requestServerPublicKey = true;
-            System.out.println("Could not load server key. Will request it upon connection");
-        }
-
-        if (client.connectToServer(requestServerPublicKey)) {
-            //Receive certificate from Server and validate it
-            if (!client.receiveAndValidateServerCertificate()) {
-                System.out.println("Could not receive Server's Certificate or invalid Server's Certificate");
-                System.exit(-1);
-            }
-
-            //Send Certificate to Server
-            if (!client.sendCertificateToServer()) {
-                System.out.println("Could not send certificate to server");
-                System.exit(-1);
-            }
+        if (client.connectToServer()) {
+            System.out.println("Connected! Going to start client thread!");
             //Create Client Thread
             client.startClientThread();
         }
