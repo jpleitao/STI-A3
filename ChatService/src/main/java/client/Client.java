@@ -7,12 +7,14 @@ import org.apache.commons.codec.digest.DigestUtils;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.*;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
 
 public class Client{
 
     private final int portNumber;
+    private final int portNumber2;
     private final String serverHost;
     private final String sessionKeyAlgorithm;
     private final String serverEncryptionAlgorithm;
@@ -32,6 +34,7 @@ public class Client{
 
     public Client(String username, String password) {
         portNumber = 9996;
+        portNumber2 = 9997;
         SESSIONKEYSIZE = 128;
         serverHost = "localhost";
         sessionKeyAlgorithm = "AES/CFB8/NoPadding";
@@ -169,7 +172,17 @@ public class Client{
             outputStream.writeObject(outputCipher.getIV());
             outputStream.flush();
 
-            //Create new Input and Output Stream -- FIXME: HERE WE SHOULD CLOSE THE CONNECTION AND OPEN A SERVER SOCKET, WAITING FOR THE SERVER CONNECTION
+            //Create new Input and Output Stream:
+            //CLOSE THE CONNECTION AND OPEN A SERVER SOCKET, WAITING FOR THE SERVER CONNECTION
+
+            //Close the socket
+            socket.close();
+
+            //Wait for the server connection!
+            ServerSocket serverSocket = new ServerSocket(portNumber2);
+            socket = serverSocket.accept();
+            serverSocket.close();
+
             CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
             outputStream = new ObjectOutputStream(cipherOutputStream);
             outputStream.flush();

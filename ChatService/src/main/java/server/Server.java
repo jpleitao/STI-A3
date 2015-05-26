@@ -10,6 +10,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.security.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +19,7 @@ import java.util.List;
 public class Server {
 
     private final int portNumber;
+    private final int portNumber2;
     private final String publicKeyFilePath;
     private final String privateKeyFilePath;
     private final String sessionKeyAlgorithm;
@@ -38,6 +40,7 @@ public class Server {
 
     public Server() {
         portNumber = 9996;
+        portNumber2 = 9997;
         publicKeyFilePath = "Server-PublicKey.ser";
         privateKeyFilePath = "Server-PrivateKey.ser";
         sessionKeyAlgorithm = "AES/CFB8/NoPadding"; //CFB8 sends data in blocks of 8 bits = 1 byte
@@ -177,7 +180,16 @@ public class Server {
             byte [] inputIV = (byte[])streams.inputStream.readObject();
             Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, newSessionKey, sessionKeyAlgorithm, inputIV);
 
-            //Creating the real communications stream -- FIXME: HERE WE SHOULD CLOSE THE SOCKET AND CONNECT TO THE CLIENT'S SERVER SOCKET, RETURNING THE CORRESPONDENT OBJECTSTREAMBUNDLE
+            //Creating the real communications stream:
+            //CLOSE THE SOCKET AND CONNECT TO THE CLIENT'S SERVER SOCKET, RETURNING THE CORRESPONDENT OBJECTSTREAMBUNDLE
+
+            //Save client's location
+            String clientLocation = socket.getInetAddress().getHostAddress();
+
+            //Close the socket and connect to the client's server socket
+            socket.close();
+            socket = new Socket(clientLocation, portNumber2);
+
             CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
             ObjectOutputStream outputStream = new ObjectOutputStream(cipherOutputStream);
             outputStream.flush(); activeClients.add(outputStream);

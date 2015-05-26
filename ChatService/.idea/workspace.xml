@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="4285d466-a304-4568-8a31-169402c73636" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/main/java/common/SessionKeyObject.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/target/classes/client/Client.class" afterPath="$PROJECT_DIR$/target/classes/client/Client.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/target/classes/server/Server$ObjectStreamBundle.class" afterPath="$PROJECT_DIR$/target/classes/server/Server$ObjectStreamBundle.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/target/classes/server/Server.class" afterPath="$PROJECT_DIR$/target/classes/server/Server.class" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/target/classes/server/ServerThread.class" afterPath="$PROJECT_DIR$/target/classes/server/ServerThread.class" />
+    <list default="true" id="4285d466-a304-4568-8a31-169402c73636" name="Default" comment="Reconnect on s">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/client/Client.java" afterPath="$PROJECT_DIR$/src/main/java/client/Client.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/java/server/Server.java" afterPath="$PROJECT_DIR$/src/main/java/server/Server.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
@@ -47,11 +42,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Client.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="Client.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/java/client/Client.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0">
-              <caret line="171" column="154" selection-start-line="171" selection-start-column="154" selection-end-line="171" selection-end-column="154" />
+            <state vertical-scroll-proportion="0.16363636">
+              <caret line="175" column="14" selection-start-line="175" selection-start-column="14" selection-end-line="175" selection-end-column="14" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -69,24 +64,29 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ServerThread.java" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/java/server/ServerThread.java">
+      <file leaf-file-name="Server.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/java/server/Server.java">
           <provider selected="true" editor-type-id="text-editor">
             <state vertical-scroll-proportion="0.0">
-              <caret line="67" column="39" selection-start-line="67" selection-start-column="39" selection-end-line="67" selection-end-column="39" />
+              <caret line="183" column="120" selection-start-line="183" selection-start-column="120" selection-end-line="183" selection-end-column="120" />
               <folding>
-                <element signature="imports" expanded="true" />
+                <element signature="e#9868#9869#0" expanded="true" />
+                <element signature="e#9942#9943#0" expanded="true" />
+                <element signature="e#12330#12331#0" expanded="true" />
+                <element signature="e#12392#12393#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Server.java" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/main/java/server/Server.java">
+      <file leaf-file-name="ServerThread.java" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/main/java/server/ServerThread.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.5290909">
-              <caret line="179" column="185" selection-start-line="179" selection-start-column="185" selection-end-line="179" selection-end-column="185" />
-              <folding />
+            <state vertical-scroll-proportion="0.0">
+              <caret line="67" column="38" selection-start-line="67" selection-start-column="38" selection-end-line="67" selection-end-column="38" />
+              <folding>
+                <element signature="imports" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -147,13 +147,13 @@
         <option value="$PROJECT_DIR$/src/main/java/client/NotClosingOutputStream.java" />
         <option value="$PROJECT_DIR$/.gitignore" />
         <option value="$PROJECT_DIR$/src/main/java/common/PackageBundleObject.java" />
-        <option value="$PROJECT_DIR$/src/main/java/server/ServerThread.java" />
         <option value="$PROJECT_DIR$/src/main/java/client/ClientThread.java" />
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/src/main/java/common/ConnectionRequestObject.java" />
         <option value="$PROJECT_DIR$/src/main/java/common/SessionKeyObject.java" />
-        <option value="$PROJECT_DIR$/src/main/java/client/Client.java" />
+        <option value="$PROJECT_DIR$/src/main/java/server/ServerThread.java" />
         <option value="$PROJECT_DIR$/src/main/java/server/Server.java" />
+        <option value="$PROJECT_DIR$/src/main/java/client/Client.java" />
       </list>
     </option>
   </component>
@@ -794,7 +794,7 @@
       <workItem from="1432599404054" duration="243000" />
       <workItem from="1432647525355" duration="1195000" />
       <workItem from="1432650167190" duration="1002000" />
-      <workItem from="1432652642739" duration="1365000" />
+      <workItem from="1432652642739" duration="3697000" />
     </task>
     <task id="LOCAL-00001" summary="Added project file">
       <created>1431960277927</created>
@@ -1006,15 +1006,21 @@
       <option name="project" value="LOCAL" />
       <updated>1432648297443</updated>
     </task>
-    <option name="localTasksCounter" value="36" />
+    <task id="LOCAL-00036" summary="Initial session key exchange now also has hashing">
+      <created>1432654035956</created>
+      <option name="number" value="00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1432654035956</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="102936000" />
+    <option name="totallyTimeSpent" value="105268000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="65" y="24" width="1855" height="1056" extended-state="6" />
-    <editor active="false" />
+    <editor active="true" />
     <layout>
       <window_info id="Palette&#9;" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
@@ -1033,7 +1039,7 @@
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.19624102" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.39583334" sideWeight="0.49806523" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.39583334" sideWeight="0.49806523" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32916668" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
@@ -1080,7 +1086,6 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Saving certificates as object files" />
     <MESSAGE value="Typo fix" />
     <MESSAGE value="Cannot make the client and the server send messages to each other anymore" />
     <MESSAGE value="Forgot to add Server class" />
@@ -1105,7 +1110,8 @@
     <MESSAGE value="Added base code" />
     <MESSAGE value="No more CA! Just using normal username and password" />
     <MESSAGE value="Authenticating user with hashing" />
-    <option name="LAST_COMMIT_MESSAGE" value="Authenticating user with hashing" />
+    <MESSAGE value="Initial session key exchange now also has hashing" />
+    <option name="LAST_COMMIT_MESSAGE" value="Initial session key exchange now also has hashing" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1132,7 +1138,12 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="170" column="0" selection-start-line="170" selection-start-column="0" selection-end-line="170" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#9868#9869#0" expanded="true" />
+            <element signature="e#9942#9943#0" expanded="true" />
+            <element signature="e#12330#12331#0" expanded="true" />
+            <element signature="e#12392#12393#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1168,7 +1179,12 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#9868#9869#0" expanded="true" />
+            <element signature="e#9942#9943#0" expanded="true" />
+            <element signature="e#12330#12331#0" expanded="true" />
+            <element signature="e#12392#12393#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1220,7 +1236,12 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="445" column="17" selection-start-line="445" selection-start-column="17" selection-end-line="445" selection-end-column="17" />
-          <folding />
+          <folding>
+            <element signature="e#9868#9869#0" expanded="true" />
+            <element signature="e#9942#9943#0" expanded="true" />
+            <element signature="e#12330#12331#0" expanded="true" />
+            <element signature="e#12392#12393#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1264,7 +1285,12 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="445" column="17" selection-start-line="445" selection-start-column="17" selection-end-line="445" selection-end-column="17" />
-          <folding />
+          <folding>
+            <element signature="e#9868#9869#0" expanded="true" />
+            <element signature="e#9942#9943#0" expanded="true" />
+            <element signature="e#12330#12331#0" expanded="true" />
+            <element signature="e#12392#12393#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1290,7 +1316,12 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="216" column="29" selection-start-line="216" selection-start-column="29" selection-end-line="216" selection-end-column="29" />
-          <folding />
+          <folding>
+            <element signature="e#9868#9869#0" expanded="true" />
+            <element signature="e#9942#9943#0" expanded="true" />
+            <element signature="e#12330#12331#0" expanded="true" />
+            <element signature="e#12392#12393#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1318,7 +1349,12 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#9868#9869#0" expanded="true" />
+            <element signature="e#9942#9943#0" expanded="true" />
+            <element signature="e#12330#12331#0" expanded="true" />
+            <element signature="e#12392#12393#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1346,7 +1382,12 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#9868#9869#0" expanded="true" />
+            <element signature="e#9942#9943#0" expanded="true" />
+            <element signature="e#12330#12331#0" expanded="true" />
+            <element signature="e#12392#12393#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1374,7 +1415,12 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
           <caret line="235" column="64" selection-start-line="235" selection-start-column="64" selection-end-line="235" selection-end-column="64" />
-          <folding />
+          <folding>
+            <element signature="e#9868#9869#0" expanded="true" />
+            <element signature="e#9942#9943#0" expanded="true" />
+            <element signature="e#12330#12331#0" expanded="true" />
+            <element signature="e#12392#12393#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -1517,6 +1563,16 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/server/ServerThread.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="67" column="38" selection-start-line="67" selection-start-column="38" selection-end-line="67" selection-end-column="38" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/common/SessionKeyObject.java">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -1525,31 +1581,26 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/client/Client.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="171" column="154" selection-start-line="171" selection-start-column="154" selection-end-line="171" selection-end-column="154" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/java/server/ServerThread.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="67" column="39" selection-start-line="67" selection-start-column="39" selection-end-line="67" selection-end-column="39" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/java/server/Server.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.5290909">
-          <caret line="179" column="185" selection-start-line="179" selection-start-column="185" selection-end-line="179" selection-end-column="185" />
-          <folding />
+        <state vertical-scroll-proportion="0.0">
+          <caret line="183" column="120" selection-start-line="183" selection-start-column="120" selection-end-line="183" selection-end-column="120" />
+          <folding>
+            <element signature="e#9868#9869#0" expanded="true" />
+            <element signature="e#9942#9943#0" expanded="true" />
+            <element signature="e#12330#12331#0" expanded="true" />
+            <element signature="e#12392#12393#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/main/java/client/Client.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.16363636">
+          <caret line="175" column="14" selection-start-line="175" selection-start-column="14" selection-end-line="175" selection-end-column="14" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
