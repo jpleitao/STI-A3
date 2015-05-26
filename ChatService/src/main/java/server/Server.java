@@ -10,8 +10,6 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -20,11 +18,8 @@ public class Server {
     private final int portNumber;
     private final String publicKeyFilePath;
     private final String privateKeyFilePath;
-    private final String caCertificateFilePath;
     private final String sessionKeyAlgorithm;
     private final String serverKeyAlgorithm;
-    private final String certificateType;
-    private final String certificateFilePath;
     private final String fileEncryptionKey;
     private final String userDatabaseFilePath;
 
@@ -32,9 +27,6 @@ public class Server {
     private PrivateKey privateKey;
     private PublicKey publicKey;
     private ServerSocket serverSocket;
-    private CertificateFactory certificateFactory;
-    private X509Certificate caCertificate;
-    private X509Certificate certificate;
     private Database database;
 
     private static final int KEYSIZE = 512;
@@ -44,15 +36,9 @@ public class Server {
         portNumber = 9996;
         publicKeyFilePath = "Server-PublicKey.ser";
         privateKeyFilePath = "Server-PrivateKey.ser";
-        caCertificateFilePath = "CA-Certificate.ser";
-        certificateFilePath = "Server-Certificate.cer";
         sessionKeyAlgorithm = "AES/CFB8/NoPadding"; //CFB8 sends data in blocks of 8 bits = 1 byte
         serverKeyAlgorithm = "RSA/None/PKCS1Padding";
         fileEncryptionKey = "STI-ChatServer";
-        certificateType = "X.509";
-        certificateFactory = null;
-        caCertificate = null;
-        certificate = null;
         secureRandom = new SecureRandom();
         userDatabaseFilePath = "users.ser";
         database = new Database();
@@ -267,12 +253,29 @@ public class Server {
         try {
             //Read user information
             ConnectionRequestObject connectionRequestObject = (ConnectionRequestObject) streams.inputStream.readObject();
+
+            //Check username and password hash
+            if (connectionRequestObject == null) {
+                System.out.println("Invalid object!");
+                return false;
+            }
+            else if (connectionRequestObject.username == null || connectionRequestObject.usernameHash == null ||
+                !connectionRequestObject.usernameHash.equals(DigestUtils.sha1Hex(connectionRequestObject.username))) {
+                System.out.println("Invalid username/hash!");
+                return false;
+            } else if (connectionRequestObject.password == null || connectionRequestObject.passwordHash == null ||
+                      !connectionRequestObject.passwordHash.equals(DigestUtils.sha1Hex(connectionRequestObject.password))) {
+                System.out.println("Invalid password/hash!");
+                return false;
+            }
+
             result = lookupUser(connectionRequestObject.username, connectionRequestObject.password);
             System.out.println("User tried to login with credentials " + connectionRequestObject.username + " " +
                                 connectionRequestObject.password + " and got login result: " + result);
 
             //Send result to the user
-            streams.outputStream.writeBoolean(result);
+            PackageBundleObject packageBundleObject = new PackageBundleObject("OK", null);
+            streams.outputStream.writeObject(packageBundleObject);
             streams.outputStream.flush();
             return result;
         } catch (ClassNotFoundException | IOException e) {
