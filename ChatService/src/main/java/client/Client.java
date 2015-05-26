@@ -5,9 +5,7 @@ import common.PackageBundleObject;
 import org.apache.commons.codec.digest.DigestUtils;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.security.*;
 
@@ -28,6 +26,8 @@ public class Client{
     private ClientThread clientThread;
     private String username;
     private String password;
+    private BufferedReader console;
+    private int counter=0;
 
     public Client(String username, String password) {
         portNumber = 9996;
@@ -42,6 +42,7 @@ public class Client{
         clientThread = null;
         this.username = username;
         this.password = password;
+        console = new BufferedReader(new InputStreamReader(System.in));
     }
 
     private boolean connectToServer() {
@@ -77,6 +78,25 @@ public class Client{
             ioexception.printStackTrace();
             return false;
         }
+    }
+
+    public void run(){
+        sendMessage("olá");
+
+        /*
+        int i=0;
+        while (i<1){
+            try {
+                String line = console.readLine();
+                sendMessage(line);
+
+            }catch (IOException e) {
+                e.getMessage();
+                e.printStackTrace();
+            }
+            i++;
+        }*/
+
     }
 
     private boolean getServerPublicKey() {
@@ -136,6 +156,7 @@ public class Client{
             return false;
 
         try{
+
             //Receiving the initial IV for the input cypher
             byte [] inputIV = (byte[])inputStream.readObject();
             Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, newSessionKey, sessionKeyAlgorithm, inputIV);
@@ -164,14 +185,19 @@ public class Client{
     }
 
     public boolean sendMessage(String message) {
+        counter++;
         try{
             PackageBundleObject packageBundleObject = new PackageBundleObject(message, null);
             outputStream.writeObject(packageBundleObject);
             outputStream.flush();
+
+            System.out.println("Counter: " +counter);
             return true;
         } catch (IOException e) {
             e.getMessage();
             e.printStackTrace();
+
+            System.out.println("Counter: " +counter);
             return false;
         }
     }
@@ -204,8 +230,8 @@ public class Client{
             }
             return null;
         } catch (IOException|ClassNotFoundException e){
-            e.getMessage();
-            e.printStackTrace();
+            //e.getMessage();
+            //e.printStackTrace();
             return null;
         }
     }
@@ -284,13 +310,14 @@ public class Client{
         if (args.length != 2)
             client = new Client("joaquim", "1234");
         else
-        //Create the client and connect it to the Chat Server
+            //Create the client and connect it to the Chat Server
             client = new Client(args[0], args[1]);
 
         if (client.connectToServer()) {
             System.out.println("Connected! Going to start client thread!");
             //Create Client Thread
             client.startClientThread();
+            client.run();
         }
     }
 }

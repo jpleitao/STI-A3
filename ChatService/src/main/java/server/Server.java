@@ -10,21 +10,17 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class Server {
 
     private final int portNumber;
     private final String publicKeyFilePath;
     private final String privateKeyFilePath;
-    private final String caCertificateFilePath;
     private final String sessionKeyAlgorithm;
     private final String serverKeyAlgorithm;
-    private final String certificateType;
-    private final String certificateFilePath;
     private final String fileEncryptionKey;
     private final String userDatabaseFilePath;
 
@@ -32,10 +28,9 @@ public class Server {
     private PrivateKey privateKey;
     private PublicKey publicKey;
     private ServerSocket serverSocket;
-    private CertificateFactory certificateFactory;
-    private X509Certificate caCertificate;
-    private X509Certificate certificate;
     private Database database;
+
+    private List<ObjectOutputStream> activeClients;
 
     private static final int KEYSIZE = 512;
     private static final int SESSIONKEYSIZE = 128;
@@ -44,18 +39,13 @@ public class Server {
         portNumber = 9996;
         publicKeyFilePath = "Server-PublicKey.ser";
         privateKeyFilePath = "Server-PrivateKey.ser";
-        caCertificateFilePath = "CA-Certificate.ser";
-        certificateFilePath = "Server-Certificate.cer";
         sessionKeyAlgorithm = "AES/CFB8/NoPadding"; //CFB8 sends data in blocks of 8 bits = 1 byte
         serverKeyAlgorithm = "RSA/None/PKCS1Padding";
         fileEncryptionKey = "STI-ChatServer";
-        certificateType = "X.509";
-        certificateFactory = null;
-        caCertificate = null;
-        certificate = null;
         secureRandom = new SecureRandom();
         userDatabaseFilePath = "users.ser";
         database = new Database();
+        activeClients = new ArrayList<>();
     }
 
     private boolean connectServer() {
@@ -167,6 +157,7 @@ public class Server {
 
     public ObjectStreamBundle sendNewKey(ObjectStreamBundle streams, Socket socket) {
         SecretKey newSessionKey = generateSessionKey();
+        activeClients.remove(streams.outputStream);
 
         try {
             //Send the new session key
@@ -185,13 +176,13 @@ public class Server {
             byte [] inputIV = (byte[])streams.inputStream.readObject();
             Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, newSessionKey, sessionKeyAlgorithm, inputIV);
 
-
             //Creating the real communications stream
             CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
             ObjectOutputStream outputStream = new ObjectOutputStream(cipherOutputStream);
-            outputStream.flush();
+            outputStream.flush(); activeClients.add(outputStream);
             CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), inputCipher);
             ObjectInputStream inputStream = new ObjectInputStream(cipherInputStream);
+            System.out.println("Created input stream with success!");
 
             return new ObjectStreamBundle(inputStream, outputStream);
 
@@ -335,12 +326,17 @@ public class Server {
         }
     }
 
-    public boolean sendMessage(String message, ObjectOutputStream stream) {
+    public boolean sendMessage(String message, ObjectOutputStream ownerStream) {
         try{
             //Message hash and check if we need to change the key
             PackageBundleObject packageBundleObject = new PackageBundleObject(message, null);
-            stream.writeObject(packageBundleObject);
-            stream.flush();
+            for(ObjectOutputStream stream : activeClients){
+                if(stream == ownerStream){
+                    stream.writeObject(packageBundleObject);
+                    stream.flush();
+                }
+            }
+
             return true;
         } catch (IOException e) {
             e.getMessage();
@@ -391,7 +387,7 @@ public class Server {
             //Creating the real communications stream
             CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
             ObjectOutputStream outputStream = new ObjectOutputStream(cipherOutputStream);
-            outputStream.flush();
+            activeClients.add(outputStream); outputStream.flush();
             CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), inputCipher);
             ObjectInputStream inputStream = new ObjectInputStream(cipherInputStream);
 

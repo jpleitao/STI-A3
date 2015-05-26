@@ -47,35 +47,14 @@ public class ServerThread extends Thread{
         //Now we are ready to actually start exchanging messages!!!
         //FIXME THIS PART IS BUGGY
         while (!this.isInterrupted()) {
-            //Try sending a string to the client with the received sessionKey
-            String message = "Hello from Server";
-            boolean result = sendMessage(message, streams.outputStream);
-            System.out.println("[1]Sent message and the result was " + result);
-            if (!result)
-                this.interrupt();
-
-            String received = readMessage(streams.inputStream);
-            System.out.println("[1]Received message " + received);
-            if (received == null) {
-                this.interrupt();
-            }
-            System.out.println("KSKSKSK");
-            this.interrupt();
+            String message = readMessage(streams.inputStream);
+            sendMessage(message, streams.outputStream);
         }
 
     }
 
     private boolean sendMessage(String message, ObjectOutputStream outputStream) {
-        if(!server.sendMessage(message, outputStream))
-            return false;
-        currentNumberCommunications++;
-        if(currentNumberCommunications == MAX_COMMUNICATIONS) {
-            streams = server.sendNewKey(streams, clientSocket);
-            if (streams == null)
-                return false;
-            currentNumberCommunications = 0;
-        }
-        return true;
+        return (!server.sendMessage(message, outputStream));
     }
 
     private String readMessage(ObjectInputStream inputStream) {
