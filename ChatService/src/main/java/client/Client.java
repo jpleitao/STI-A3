@@ -2,6 +2,7 @@ package client;
 
 import common.ConnectionRequestObject;
 import common.PackageBundleObject;
+import common.SessionKeyObject;
 import org.apache.commons.codec.digest.DigestUtils;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -81,7 +82,7 @@ public class Client{
     }
 
     public void run(){
-        sendMessage("olá");
+        sendMessage("ola");
 
         /*
         int i=0;
@@ -168,7 +169,7 @@ public class Client{
             outputStream.writeObject(outputCipher.getIV());
             outputStream.flush();
 
-            //Create new Input and Output Stream
+            //Create new Input and Output Stream -- FIXME: HERE WE SHOULD CLOSE THE CONNECTION AND OPEN A SERVER SOCKET, WAITING FOR THE SERVER CONNECTION
             CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
             outputStream = new ObjectOutputStream(cipherOutputStream);
             outputStream.flush();
@@ -244,9 +245,11 @@ public class Client{
                 return false;
             byte [] sessionKeyEncripted = rsaCipher.doFinal(communicationKey.getEncoded());
 
+            SessionKeyObject sessionKeyObject = new SessionKeyObject(sessionKeyEncripted, communicationKey.getEncoded());
+
             //Sending the session key encrypted
             ObjectOutputStream objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-            objectOutputStream.writeObject(sessionKeyEncripted);
+            objectOutputStream.writeObject(sessionKeyObject);
             objectOutputStream.flush();
             System.out.println("Sent sessionKey encrypted with Server's public key");
 

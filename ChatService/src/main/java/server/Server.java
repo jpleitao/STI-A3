@@ -2,6 +2,7 @@ package server;
 
 import common.ConnectionRequestObject;
 import common.PackageBundleObject;
+import common.SessionKeyObject;
 import org.apache.commons.codec.digest.DigestUtils;
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -176,7 +177,7 @@ public class Server {
             byte [] inputIV = (byte[])streams.inputStream.readObject();
             Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, newSessionKey, sessionKeyAlgorithm, inputIV);
 
-            //Creating the real communications stream
+            //Creating the real communications stream -- FIXME: HERE WE SHOULD CLOSE THE SOCKET AND CONNECT TO THE CLIENT'S SERVER SOCKET, RETURNING THE CORRESPONDENT OBJECTSTREAMBUNDLE
             CipherOutputStream cipherOutputStream = new CipherOutputStream(socket.getOutputStream(), outputCipher);
             ObjectOutputStream outputStream = new ObjectOutputStream(cipherOutputStream);
             outputStream.flush(); activeClients.add(outputStream);
@@ -382,11 +383,21 @@ public class Server {
             if (rsaCipher == null)
                 return null;
             ObjectInputStream objectInputStream = new ObjectInputStream(socket.getInputStream());
-            byte [] encryptedSessionKey = (byte[])objectInputStream.readObject();
+            SessionKeyObject sessionKeyObject = (SessionKeyObject) objectInputStream.readObject();
 
-            byte[] sessionKeyEncoded = rsaCipher.doFinal(encryptedSessionKey);
+            if (sessionKeyObject == null || sessionKeyObject.sessionKeyEncrypted == null || sessionKeyObject.sessionKeyhash == null) {
+                System.out.println("Failed to get session key!");
+                return null;
+            }
+
+            byte[] sessionKeyEncoded = rsaCipher.doFinal(sessionKeyObject.sessionKeyEncrypted);
+            //Check hash
+            if (!sessionKeyObject.sessionKeyhash.equals(DigestUtils.sha1Hex(sessionKeyEncoded))) {
+                System.out.println("Failed to get session key!");
+                return null;
+            }
+
             SecretKey sessionKey =  new SecretKeySpec(sessionKeyEncoded, 0, sessionKeyEncoded.length, "AES") ;
-
             System.out.println("Received client's session key " + sessionKey);
 
             //Receiving the initial IV for the input cypher
