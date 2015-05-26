@@ -160,10 +160,11 @@ public class Client{
             return false;
 
         try{
-
             //Receiving the initial IV for the input cypher
+            System.out.println("Going to receive initial IV");
             byte [] inputIV = (byte[])inputStream.readObject();
             Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, newSessionKey, sessionKeyAlgorithm, inputIV);
+            System.out.println("Got initial IV");
 
             //Sending the initial IV of the output cipher
             Cipher outputCipher = initCipher(Cipher.ENCRYPT_MODE, newSessionKey, sessionKeyAlgorithm, null);
@@ -171,6 +172,7 @@ public class Client{
                 return false;
             outputStream.writeObject(outputCipher.getIV());
             outputStream.flush();
+            System.out.println("Sent initial IV");
 
             //Create new Input and Output Stream:
             //CLOSE THE CONNECTION AND OPEN A SERVER SOCKET, WAITING FOR THE SERVER CONNECTION

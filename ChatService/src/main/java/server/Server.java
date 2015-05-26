@@ -170,15 +170,19 @@ public class Server {
             streams.outputStream.flush();
 
             //Send initial iv
+            System.out.println("Going to send initial IV");
             Cipher outputCipher = initCipher(Cipher.ENCRYPT_MODE, newSessionKey, sessionKeyAlgorithm, null);
             if (outputCipher == null)
                 return null;
             streams.outputStream.writeObject(outputCipher.getIV());
             streams.outputStream.flush();
+            System.out.println("Sent initial IV");
 
             //Receive initial iv
+            System.out.println("Going to receive initial IV");
             byte [] inputIV = (byte[])streams.inputStream.readObject();
             Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, newSessionKey, sessionKeyAlgorithm, inputIV);
+            System.out.println("Received initial IV");
 
             //Creating the real communications stream:
             //CLOSE THE SOCKET AND CONNECT TO THE CLIENT'S SERVER SOCKET, RETURNING THE CORRESPONDENT OBJECTSTREAMBUNDLE

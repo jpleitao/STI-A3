@@ -14,7 +14,7 @@ public class ClientThread extends Thread{
 
             String message = client.readMessage();
             //System.out.println(message);
-            if(message != null)
+            if(message != null && !message.equals(""))//REMEMBER WHEN READ MESSAGE RETURNS "" IT MEANS NEW SESSION KEY!!!!!
                 client.sendMessage(message);
         }
     }
