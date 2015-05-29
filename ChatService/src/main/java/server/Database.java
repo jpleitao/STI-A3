@@ -66,8 +66,6 @@ public class Database {
             return true;
         } catch (IOException | NoSuchAlgorithmException | NoSuchPaddingException | NoSuchProviderException |
                 InvalidKeyException e) {
-            e.getMessage();
-            e.printStackTrace();
             return false;
         }
     }
@@ -93,8 +91,6 @@ public class Database {
             return true;
         } catch (IOException | NoSuchAlgorithmException | NoSuchPaddingException | NoSuchProviderException |
                 InvalidKeyException | ClassNotFoundException e) {
-            e.getMessage();
-            e.printStackTrace();
             return false;
         }
     }

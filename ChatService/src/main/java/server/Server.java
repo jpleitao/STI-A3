@@ -10,7 +10,6 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.security.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -57,8 +56,6 @@ public class Server {
             serverSocket = new ServerSocket(portNumber);
             return true;
         } catch (IOException e) {
-            e.getMessage();
-            e.printStackTrace();
             return false;
         }
     }
@@ -75,12 +72,10 @@ public class Server {
         database.initDatabase();
 
         ArrayList<String[]> data = database.getUsersDatabase();
-        if (data != null)
-            System.out.println(Arrays.toString(data.get(0)));
     }
 
     private boolean generateServerKeys() {
-        System.out.println("Going to generate new keys");
+        //System.out.println("Going to generate new keys");
         KeyPair keyPair = generateKeyPair();
         if (keyPair == null)
             return false;
@@ -98,8 +93,6 @@ public class Server {
             oos.close();
             return true;
         } catch(IOException ioe) {
-            ioe.getMessage();
-            ioe.printStackTrace();
             return false;
         }
     }
@@ -108,7 +101,7 @@ public class Server {
         try {
             //Get encryption key based on text
             byte[] input = privateKey.getEncoded();
-            System.out.println("Key len=" + input.length);
+            //System.out.println("Key len=" + input.length);
             byte[] fileEncryptionKeyBytes = fileEncryptionKey.getBytes("UTF-8");
 
             //Get 128 bit private encryption key from the given string
@@ -129,8 +122,6 @@ public class Server {
             return true;
         } catch(IOException | NoSuchPaddingException| NoSuchAlgorithmException | InvalidKeyException |
                 NoSuchProviderException e) {
-            e.getMessage();
-            e.printStackTrace();
             return false;
         }
     }
@@ -170,19 +161,19 @@ public class Server {
             streams.outputStream.flush();
 
             //Send initial iv
-            System.out.println("Going to send initial IV");
+            //System.out.println("Going to send initial IV");
             Cipher outputCipher = initCipher(Cipher.ENCRYPT_MODE, newSessionKey, sessionKeyAlgorithm, null);
             if (outputCipher == null)
                 return null;
             streams.outputStream.writeObject(outputCipher.getIV());
             streams.outputStream.flush();
-            System.out.println("Sent initial IV");
+            //System.out.println("Sent initial IV");
 
             //Receive initial iv
-            System.out.println("Going to receive initial IV");
+            //System.out.println("Going to receive initial IV");
             byte [] inputIV = (byte[])streams.inputStream.readObject();
             Cipher inputCipher = initCipher(Cipher.DECRYPT_MODE, newSessionKey, sessionKeyAlgorithm, inputIV);
-            System.out.println("Received initial IV");
+            //System.out.println("Received initial IV");
 
             //Creating the real communications stream:
             //CLOSE THE SOCKET AND CONNECT TO THE CLIENT'S SERVER SOCKET, RETURNING THE CORRESPONDENT OBJECTSTREAMBUNDLE
@@ -199,14 +190,12 @@ public class Server {
             outputStream.flush(); activeClients.add(outputStream);
             CipherInputStream cipherInputStream = new CipherInputStream(socket.getInputStream(), inputCipher);
             ObjectInputStream inputStream = new ObjectInputStream(cipherInputStream);
-            System.out.println("Created input stream with success!");
+            //System.out.println("Created input stream with success!");
 
             return new ObjectStreamBundle(inputStream, outputStream);
 
         } catch (IOException | NoSuchAlgorithmException | ClassNotFoundException | InvalidKeyException |
                 NoSuchPaddingException | NoSuchProviderException e) {
-            e.getMessage();
-            e.printStackTrace();
             return null;
         }
     }
@@ -245,8 +234,6 @@ public class Server {
             return true;
         }catch (IOException | NoSuchPaddingException| NoSuchAlgorithmException | InvalidKeyException |
                 NoSuchProviderException | ClassNotFoundException e) {
-            e.getMessage();
-            e.printStackTrace();
             return false;
         }
     }
@@ -269,7 +256,7 @@ public class Server {
         }
     }
 
-    public boolean handleUserAuthentication(ObjectStreamBundle streams) {
+    public String handleUserAuthentication(ObjectStreamBundle streams) {
         boolean result;
 
         try {
@@ -278,32 +265,32 @@ public class Server {
 
             //Check username and password hash
             if (connectionRequestObject == null) {
-                System.out.println("Invalid object!");
-                return false;
+                //System.out.println("Invalid object!");
+                return null;
             }
             else if (connectionRequestObject.username == null || connectionRequestObject.usernameHash == null ||
                 !connectionRequestObject.usernameHash.equals(DigestUtils.sha1Hex(connectionRequestObject.username))) {
-                System.out.println("Invalid username/hash!");
-                return false;
+                //System.out.println("Invalid username/hash!");
+                return null;
             } else if (connectionRequestObject.password == null || connectionRequestObject.passwordHash == null ||
                       !connectionRequestObject.passwordHash.equals(DigestUtils.sha1Hex(connectionRequestObject.password))) {
-                System.out.println("Invalid password/hash!");
-                return false;
+                //System.out.println("Invalid password/hash!");
+                return null;
             }
 
             result = lookupUser(connectionRequestObject.username, connectionRequestObject.password);
-            System.out.println("User tried to login with credentials " + connectionRequestObject.username + " " +
-                                connectionRequestObject.password + " and got login result: " + result);
+            //System.out.println("User tried to login with credentials " + connectionRequestObject.username + " " +
+            //                    connectionRequestObject.password + " and got login result: " + result);
 
             //Send result to the user
             PackageBundleObject packageBundleObject = new PackageBundleObject("OK", null);
             streams.outputStream.writeObject(packageBundleObject);
             streams.outputStream.flush();
-            return result;
+            return connectionRequestObject.username;
         } catch (ClassNotFoundException | IOException e) {
             e.getMessage();
             e.printStackTrace();
-            return false;
+            return null;
         }
     }
 
@@ -345,17 +332,18 @@ public class Server {
         try {
             PackageBundleObject received = (PackageBundleObject) stream.readObject();
 
+            if (received.message == null)
+                return null;
+
             //Get message and compute its hash
             String messageHash = DigestUtils.sha1Hex(received.message);
             if (!messageHash.equals(received.messageHash)) {
-                System.out.println("Message has been tampered!");
+                //System.out.println("Message has been tampered!");
                 return null;
             }
 
             return received.message;
         } catch (IOException | ClassNotFoundException e){
-            e.getMessage();
-            e.printStackTrace();
             return null;
         }
     }
@@ -365,7 +353,8 @@ public class Server {
             //Message hash and check if we need to change the key
             PackageBundleObject packageBundleObject = new PackageBundleObject(message, null);
             for(ObjectOutputStream stream : activeClients){
-                if(stream == ownerStream){
+                if(stream != ownerStream){
+                    //System.out.println("Going to send to the client " + packageBundleObject.message);
                     stream.writeObject(packageBundleObject);
                     stream.flush();
                 }
@@ -373,9 +362,17 @@ public class Server {
 
             return true;
         } catch (IOException e) {
-            e.getMessage();
-            e.printStackTrace();
             return false;
+        }
+    }
+
+    public void disconnect(ObjectStreamBundle streams){
+        activeClients.remove(streams.outputStream);
+        try {
+            streams.outputStream.close();
+            streams.inputStream.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -402,19 +399,19 @@ public class Server {
             SessionKeyObject sessionKeyObject = (SessionKeyObject) objectInputStream.readObject();
 
             if (sessionKeyObject == null || sessionKeyObject.sessionKeyEncrypted == null || sessionKeyObject.sessionKeyhash == null) {
-                System.out.println("Failed to get session key!");
+                //System.out.println("Failed to get session key!");
                 return null;
             }
 
             byte[] sessionKeyEncoded = rsaCipher.doFinal(sessionKeyObject.sessionKeyEncrypted);
             //Check hash
             if (!sessionKeyObject.sessionKeyhash.equals(DigestUtils.sha1Hex(sessionKeyEncoded))) {
-                System.out.println("Failed to get session key!");
+                //System.out.println("Failed to get session key!");
                 return null;
             }
 
             SecretKey sessionKey =  new SecretKeySpec(sessionKeyEncoded, 0, sessionKeyEncoded.length, "AES") ;
-            System.out.println("Received client's session key " + sessionKey);
+            //System.out.println("Received client's session key " + sessionKey);
 
             //Receiving the initial IV for the input cypher
             byte [] inputIV = (byte[])objectInputStream.readObject();
@@ -446,7 +443,7 @@ public class Server {
 
     private void run() {
         while (true) {
-            System.out.println("Listening on socket on port " + portNumber +  "...");
+            //System.out.println("Listening on socket on port " + portNumber +  "...");
             try {
                 //Get new connection
                 Socket socket = serverSocket.accept();
@@ -455,8 +452,7 @@ public class Server {
                 ServerThread clientThread = new ServerThread(this, socket);
                 clientThread.start();
             } catch (IOException e) {
-                e.getMessage();
-                e.printStackTrace();
+                System.out.println("Error connecting to client...");
             }
         }
     }
@@ -469,7 +465,7 @@ public class Server {
 
         /*Load Server's Public and Private Keys from disk*/
         if (!server.loadKeys()) {
-            System.out.println("No Key, going to generate");
+            //System.out.println("No Key, going to generate");
             if (!server.generateServerKeys()) {
                 System.out.println("Could not generate the server's private and public keys!");
                 System.exit(-1);
