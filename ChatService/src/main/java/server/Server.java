@@ -384,19 +384,6 @@ public class Server {
         }
     }
 
-    public boolean sendMessage(String message, ObjectOutputStream stream, SecretKey sessionKey) {
-        try{
-            PackageBundleObject packageBundleObject = new PackageBundleObject(message, sessionKey);
-            stream.writeObject(packageBundleObject);
-            stream.flush();
-            return true;
-        } catch (IOException e) {
-            e.getMessage();
-            e.printStackTrace();
-            return false;
-        }
-    }
-
     public ObjectStreamBundle receiveSessionKey(Socket socket) {
         try{
             //Use private key to decrypt session key
