@@ -283,10 +283,18 @@ public class Server {
             //                    connectionRequestObject.password + " and got login result: " + result);
 
             //Send result to the user
-            PackageBundleObject packageBundleObject = new PackageBundleObject("OK", null);
-            streams.outputStream.writeObject(packageBundleObject);
-            streams.outputStream.flush();
-            return connectionRequestObject.username;
+            if (result) {
+                PackageBundleObject packageBundleObject = new PackageBundleObject("OK", null);
+                streams.outputStream.writeObject(packageBundleObject);
+                streams.outputStream.flush();
+                return connectionRequestObject.username;
+            }
+            else {
+                PackageBundleObject packageBundleObject = new PackageBundleObject("Invalid User", null);
+                streams.outputStream.writeObject(packageBundleObject);
+                streams.outputStream.flush();
+                return null;
+            }
         } catch (ClassNotFoundException | IOException e) {
             e.getMessage();
             e.printStackTrace();

@@ -296,7 +296,7 @@ public class Client{
     private boolean authenticateUser() {
         try{
             //Create the object with the request
-            ConnectionRequestObject connectionRequestObject = new ConnectionRequestObject(username, password);
+            ConnectionRequestObject connectionRequestObject = new ConnectionRequestObject(username, DigestUtils.sha1Hex(password));
             //Send the user information
             outputStream.writeObject(connectionRequestObject);
             outputStream.flush();

@@ -1,5 +1,7 @@
 package server;
 
+import org.apache.commons.codec.digest.DigestUtils;
+
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
@@ -39,10 +41,10 @@ public class Database {
     }
 
     public void initDatabase() {
-        usersDatabase.add(new String[] {"joaquim", "1234"});
-        usersDatabase.add(new String[] {"andre", "4321"});
-        usersDatabase.add(new String[] {"joao", "coimbra"});
-        usersDatabase.add(new String[] {"jorge", "uc"});
+        usersDatabase.add(new String[] {"joaquim", DigestUtils.sha1Hex("1234")});
+        usersDatabase.add(new String[] {"andre", DigestUtils.sha1Hex("4321")});
+        usersDatabase.add(new String[] {"joao", DigestUtils.sha1Hex("coimbra")});
+        usersDatabase.add(new String[] {"jorge", DigestUtils.sha1Hex("uc")});
     }
 
     public boolean exportToFile(String filePath, String fileEncryptionKey) {
