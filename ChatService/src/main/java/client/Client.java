@@ -70,11 +70,6 @@ public class Client{
                 ////System.out.println("Could not establish a session with the server");
                 return false;
             }
-
-            /* Send user credentials over secure connection
-             * Since the server is giving us a response we can assure that the server got the message and the session
-             * key, so is there any need for further server authentication? FIXME
-             */
             if(!authenticateUser()) {
                 ////System.out.println("Failed to log in");
                 return false;
