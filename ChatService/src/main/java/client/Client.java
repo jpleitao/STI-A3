@@ -93,7 +93,7 @@ public class Client{
                 String line = console.readLine();
                 if(line == null)
                     stop(GoodbyeMessage.QUIT);
-                else {
+                else if(!line.equals("")){
                     sendMessage(line);
                     if (line.equals(".quit")) {
                         stop(GoodbyeMessage.QUIT);

@@ -16,8 +16,10 @@ public class ClientThread extends Thread{
                 if (!this.isInterrupted())
                     client.stop(Client.GoodbyeMessage.CONNECTION_ERROR);
             }
-            else if(message != null && !message.equals(""))
+            else if(message != null && !message.equals("")) {
                 System.out.println(message);
+                client.sendMessage("");
+            }
         }
     }
 }

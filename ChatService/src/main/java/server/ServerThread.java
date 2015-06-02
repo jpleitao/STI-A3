@@ -54,7 +54,7 @@ public class ServerThread extends Thread{
                 if(message.equals(".quit")){
                     disconnect();
                 }
-                else {
+                else if(!message.equals("")){
                     //System.out.println("Received " + message + " from client");
                     sendMessage(username + " says...\t" + message, streams.outputStream);
                 }
@@ -72,7 +72,6 @@ public class ServerThread extends Thread{
     private String readMessage(ObjectInputStream inputStream) {
         //Check if we need to change the session key
         String message = server.readMessage(inputStream);
-
         if (message != null && !message.equals(".quit")) {
             currentNumberCommunications++;
             if(currentNumberCommunications == MAX_COMMUNICATIONS) {
