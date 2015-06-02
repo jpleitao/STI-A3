@@ -34,7 +34,7 @@ public class Server {
 
     private List<ObjectOutputStream> activeClients;
 
-    private static final int KEYSIZE = 512;
+    private static final int KEYSIZE = 2048;
     private static final int SESSIONKEYSIZE = 128;
 
     public Server() {
