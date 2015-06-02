@@ -70,12 +70,8 @@ public class Client{
                 ////System.out.println("Could not establish a session with the server");
                 return false;
             }
-            if(!authenticateUser()) {
-                ////System.out.println("Failed to log in");
-                return false;
-            }
+            return authenticateUser();
 
-            return true;
         } catch(IOException ioexception) {
             return false;
         }
